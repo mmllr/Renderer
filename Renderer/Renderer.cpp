@@ -39,6 +39,10 @@ void Renderer::setIndexBuffer(const vector<uint32_t>& indexBuffer) {
 	_indexBuffer = indexBuffer;
 }
 
+void Renderer::setModelView(const glm::mat4& modelView) {
+	_modelView = modelView;
+}
+
 void Renderer::render(void) {
 	_buffer.fill(_clearColor);
 	if (_renderFunction) {
@@ -58,15 +62,16 @@ glm::mat4 camera(float Translate, glm::vec2 const & Rotate)
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 	vector<glm::vec4> transformedPositions(_vertexBuffer.size());
-	mat4 perspective = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 1000.f);
+	mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 1000.f);
+	mat4 m = projection * _modelView;
 	
 	for (unsigned int i = firstVertexIndex; i < firstVertexIndex+count; ++i) {
 		uint32_t first = _indexBuffer[i];
 		uint32_t second = _indexBuffer[i+1];
 		uint32_t third = _indexBuffer[i+2];
-		transformedPositions[first] = perspective * _vertexBuffer[first].position;
-		transformedPositions[second] = perspective * _vertexBuffer[second].position;
-		transformedPositions[third] = perspective * _vertexBuffer[third].position;
+		transformedPositions[first] = m * _vertexBuffer[first].position;
+		transformedPositions[second] = m * _vertexBuffer[second].position;
+		transformedPositions[third] = m * _vertexBuffer[third].position;
 
 		vec2 verts[3] = {
 			vec2(transformedPositions[first]),
@@ -89,7 +94,7 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 			delta = drawEnd-drawStart;
 		}
 		int linearValue = ceil(drawStart.x);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, glm::fract(drawStart.x));
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, subpixelAdjust(drawStart.x));
 		
 		do {
 			_buffer.setPixel(color, linearValue++, ceil(lerp.interpolatedValue()));
@@ -101,7 +106,7 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 			delta = drawEnd-drawStart;
 		}
 		int linearValue = ceil(start.y);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, glm::fract(drawStart.y));
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, subpixelAdjust(drawStart.y));
 		
 		while (lerp.interpolate() && linearValue < _height) {
 			_buffer.setPixel(color, ceil(lerp.interpolatedValue()), linearValue++);
@@ -109,60 +114,55 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 	}
 }
 
-inline unsigned int nextIndex(unsigned int theIndex) {
-	return theIndex < 2 ? theIndex+1 : 0;
-}
-
-inline unsigned int previousIndex(unsigned int theIndex) {
-	return theIndex > 0 ? theIndex-1 : 2;
-}
-
 void Renderer::rasterizeTriangle(const glm::vec2 (&verts)[3]) {
-	unsigned int leftIndex = 0;
-	float minY = FLT_MAX;
-	for (int i = 0; i < 3; ++i) {
-		if (verts[i].y <= minY) {
-			leftIndex = i;
-			minY = verts[i].y;
-		}
+	triangle t = triangleFromVerts(verts);
+	
+	if (!isTrianglePotentialVisible(verts, t)) {
+		return;
 	}
-	bool bothTop = false;
-	if (verts[previousIndex(leftIndex)].y == verts[leftIndex].y) {
-		leftIndex = previousIndex(leftIndex);
-		bothTop = true;
-	}
-	unsigned int rightIndex = bothTop ? nextIndex(leftIndex) : leftIndex;
-	vec2 leftDelta = verts[previousIndex(leftIndex)] - verts[leftIndex];
-	vec2 rightDelta = verts[nextIndex(rightIndex)] - verts[rightIndex];
-
+/*	
+	int y = ceil(verts[t.topIndex].y);
+	float leftX = verts[t.topIndex].x + subpixelAdjust(verts[leftIndex].y)*t.;
+	float rightX = verts[t.topIndex].x + glm::fract(verts[rightIndex].y)*rightStep;
 	bool leftEdgeIsShort = leftDelta.y < rightDelta.y;
 	float leftStep = leftDelta.x / leftDelta.y;
 	float rightStep = rightDelta.x / rightDelta.y;
 	
-	unsigned int shortSteps = leftEdgeIsShort ? ceil(leftDelta.y) : ceil(rightDelta.y);
-	unsigned int longSteps = leftEdgeIsShort ? ceil(rightDelta.y) : ceil(leftDelta.y);
+	float shortStep = leftEdgeIsShort ? leftStep : rightStep;
+	float longStep = leftEdgeIsShort ? rightStep : leftStep;
+
+	int shortSteps = leftEdgeIsShort ? ceil(leftDelta.y) : ceil(rightDelta.y);
+	int longSteps = leftEdgeIsShort ? ceil(rightDelta.y) : ceil(leftDelta.y);
 
 	int y = ceil(verts[leftIndex].y);
-	float leftX = verts[leftIndex].x + glm::fract(verts[leftIndex].y)*leftStep;
-	float rightX = verts[rightIndex].x + glm::fract(verts[rightIndex].y)*rightStep;
+	
 	if (y < 0) {
 		int offset = abs(y);
-		y = 0;
-		shortSteps -= offset;
+		if (offset < longSteps) {
+			return;	// invisible
+		}
+		y -= offset;
 		longSteps -= offset;
+		if (y < 0) {
+			// short edge is not visible
+			offset = abs(y);
+
+			leftStep = leftDelta.x / leftDelta.y;
+			edgeLoop(longSteps, 0, leftX, rightX, leftStep, rightStep);
+		}
 		leftX += offset*leftStep;
 		rightX += offset*rightStep;
 	}
-	shortSteps = std::min(shortSteps, _height-y);
+	shortSteps = std::min((unsigned int)shortSteps, _height-y);
 	
 	std::tie(leftX, rightX) = edgeLoop(shortSteps, y, leftX, rightX, leftStep, rightStep);
 	y += shortSteps;
 	longSteps -= shortSteps;
-	if (y >= _height || longSteps == 0) {
+	if (y >= _height || longSteps <= 0) {
 		return;
 	}
 
-	longSteps = std::min(longSteps, _height-y);
+	longSteps = std::min((unsigned int)longSteps, _height-y);
 	
 	if (leftEdgeIsShort) {
 		leftDelta = verts[nextIndex(rightIndex)] - verts[previousIndex(leftIndex)];
@@ -171,7 +171,7 @@ void Renderer::rasterizeTriangle(const glm::vec2 (&verts)[3]) {
 		rightDelta = verts[previousIndex(leftIndex)] - verts[nextIndex(rightIndex)];
 		rightStep = rightDelta.x / rightDelta.y;
 	}
-	edgeLoop(longSteps, y, leftX, rightX, leftStep, rightStep);
+	edgeLoop(longSteps, y, leftX, rightX, leftStep, rightStep);*/
 }
 
 void Renderer::drawSpan(int leftX, int rightX, int y) {
@@ -181,7 +181,9 @@ void Renderer::drawSpan(int leftX, int rightX, int y) {
 	}
 }
 
-std::tuple<float, float> Renderer::edgeLoop(unsigned int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep) {
+std::tuple<float, float> Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep) {
+	assert(numberOfSteps >= 0);
+
 	while (numberOfSteps--) {
 		int left = ceil(leftX);
 		int right = ceil(rightX);
@@ -190,4 +192,16 @@ std::tuple<float, float> Renderer::edgeLoop(unsigned int numberOfSteps, int y, f
 		rightX += rightStep;
 	}
 	return std::make_tuple(leftX, rightX);
+}
+
+
+
+bool Renderer::isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const {
+	if (verts[t.rightIndex].x < 0 ||
+		verts[t.bottomIndex].y < 0 ||
+		verts[t.leftIndex].x >= _width ||
+		verts[t.topIndex].y >= _height) {
+		return false;
+	}
+	return true;
 }

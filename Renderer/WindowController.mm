@@ -39,6 +39,9 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	_renderer->setRenderFunc(renderScene02);
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(frameBufferViewBoundsChanged:) name:NSViewFrameDidChangeNotification object:self.frameBufferView];
 	[self updateView];
+	[NSTimer scheduledTimerWithTimeInterval:.01 repeats:YES block:^(NSTimer * _Nonnull timer) {
+		[self updateView];
+	}];
 }
 
 - (void)frameBufferViewBoundsChanged:(NSNotification*)notification {

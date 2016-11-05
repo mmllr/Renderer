@@ -25,8 +25,11 @@ namespace renderlib {
 		void setVertexBuffer(const vector<Vertex>& vertexBuffer);
 		void setIndexBuffer(const vector<uint32_t>& indexBuffer);
 		void drawTriangles(uint32_t firstVertexIndex, uint32_t count);
+		void setModelView(const glm::mat4& modelView);
 	private:
-		std::tuple<float, float> edgeLoop(unsigned int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep);
+		bool isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const;
+		std::tuple<float, float> edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep);
+		std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const glm::vec2 (&verts)[3]) const;
 		void drawSpan(int leftX, int rightX, int y);
 		unsigned int _width;
 		unsigned int _height;
@@ -35,6 +38,7 @@ namespace renderlib {
 		std::function<void (Renderer&)> _renderFunction;
 		vector<Vertex> _vertexBuffer;
 		vector<uint32_t> _indexBuffer;
+		glm::mat4 _modelView;
 	};
 }
 

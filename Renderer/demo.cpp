@@ -1,5 +1,8 @@
 #include "demo.hpp"
 #include <vector>
+#define _USE_MATH_DEFINES
+#include <cmath>
+#include <glm/gtc/matrix_transform.hpp>
 
 using namespace renderlib;
 using namespace std;
@@ -21,6 +24,8 @@ void renderScene01(renderlib::Renderer& renderer) {
 }
 
 void renderScene02(renderlib::Renderer& renderer) {
+	static float angle = 50;
+
 	vector<Vertex> vertexes = {
 		{{100,100,40, 1}},
 		{{200,200,40, 1}},
@@ -30,5 +35,11 @@ void renderScene02(renderlib::Renderer& renderer) {
 	
 	renderer.setVertexBuffer(vertexes);
 	renderer.setIndexBuffer(indices);
+	
+	mat4 modelView;
+	modelView = glm::rotate(modelView, glm::radians(angle), {0.f, 0.f, -1.f});
+	renderer.setModelView(modelView);
+	
 	renderer.drawTriangles(0, 1);
+	//angle = angle >= 360 ? 0 : angle + 1;
 }
