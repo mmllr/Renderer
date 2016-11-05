@@ -682,7 +682,7 @@
         </menu>
         <customObject id="848-mA-rPd" customClass="WindowController">
             <connections>
-                <outlet property="frameBufferView" destination="VXC-92-up2" id="EjA-fR-TfV"/>
+                <outlet property="frameBufferView" destination="VXC-92-up2" id="ZOV-Ij-Y9M"/>
                 <outlet property="window" destination="zdF-2F-QDx" id="koh-hd-eTH"/>
             </connections>
         </customObject>
@@ -691,7 +691,7 @@
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
             <rect key="contentRect" x="196" y="240" width="518" height="370"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="878"/>
-            <view key="contentView" wantsLayer="YES" id="VXC-92-up2" customClass="FramebufferView">
+            <view key="contentView" wantsLayer="YES" id="VXC-92-up2">
                 <rect key="frame" x="0.0" y="0.0" width="518" height="370"/>
                 <autoresizingMask key="autoresizingMask"/>
             </view>

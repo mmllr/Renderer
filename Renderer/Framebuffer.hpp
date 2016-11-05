@@ -3,12 +3,10 @@
 
 #include <cstdint>
 #include <vector>
+#include "renderlib.hpp"
 
-namespace Renderer {
-	struct Pixel {
-		uint8_t r, g, b, a;
-	};
-	
+namespace renderlib {
+
 	struct Framebuffer {
 	public:
 		Framebuffer(size_t width, size_t height);
@@ -18,6 +16,8 @@ namespace Renderer {
 		size_t getHeight(void) const { return _height; }
 		size_t getBitsPerComponent(void) const { return 8; }
 		size_t getBytesPerRow(void) const { return sizeof(Pixel)*_width; }
+		void resize(size_t width, size_t height);
+		void fill(const Pixel& fillElement);
 	private:
 		size_t _width;
 		size_t _height;

@@ -7,16 +7,25 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		280B81C51DCC9419001BA6C9 /* Renderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81C31DCC9419001BA6C9 /* Renderer.cpp */; };
+		280B81C81DCC9A0E001BA6C9 /* LinearInterpolator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81C61DCC9A0E001BA6C9 /* LinearInterpolator.cpp */; };
+		280B81CF1DCCA5DB001BA6C9 /* demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81CD1DCCA5DB001BA6C9 /* demo.cpp */; };
 		28522BBD1DCBA6D100839B04 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 28522BBC1DCBA6D100839B04 /* AppDelegate.m */; };
 		28522BC01DCBA6D100839B04 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 28522BBF1DCBA6D100839B04 /* main.m */; };
 		28522BC21DCBA6D100839B04 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 28522BC11DCBA6D100839B04 /* Assets.xcassets */; };
 		28522BC51DCBA6D100839B04 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28522BC31DCBA6D100839B04 /* MainMenu.xib */; };
-		28522BCE1DCBA75F00839B04 /* FramebufferView.mm in Sources */ = {isa = PBXBuildFile; fileRef = 28522BCD1DCBA75F00839B04 /* FramebufferView.mm */; };
 		28BA77971DCBA7E4006492FE /* WindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 28BA77961DCBA7E4006492FE /* WindowController.mm */; };
 		28BA779C1DCBABA0006492FE /* Framebuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 28BA779A1DCBABA0006492FE /* Framebuffer.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		280B81C31DCC9419001BA6C9 /* Renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Renderer.cpp; sourceTree = "<group>"; };
+		280B81C41DCC9419001BA6C9 /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Renderer.hpp; sourceTree = "<group>"; };
+		280B81C61DCC9A0E001BA6C9 /* LinearInterpolator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LinearInterpolator.cpp; sourceTree = "<group>"; };
+		280B81C71DCC9A0E001BA6C9 /* LinearInterpolator.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LinearInterpolator.hpp; sourceTree = "<group>"; };
+		280B81C91DCC9AAA001BA6C9 /* renderlib.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = renderlib.hpp; sourceTree = "<group>"; };
+		280B81CD1DCCA5DB001BA6C9 /* demo.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = demo.cpp; sourceTree = "<group>"; };
+		280B81CE1DCCA5DB001BA6C9 /* demo.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = demo.hpp; sourceTree = "<group>"; };
 		28522BB81DCBA6D100839B04 /* Renderer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Renderer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		28522BBB1DCBA6D100839B04 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		28522BBC1DCBA6D100839B04 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -24,8 +33,6 @@
 		28522BC11DCBA6D100839B04 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		28522BC41DCBA6D100839B04 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		28522BC61DCBA6D100839B04 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		28522BCC1DCBA75F00839B04 /* FramebufferView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FramebufferView.h; sourceTree = "<group>"; };
-		28522BCD1DCBA75F00839B04 /* FramebufferView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FramebufferView.mm; sourceTree = "<group>"; };
 		28BA77951DCBA7E4006492FE /* WindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindowController.h; sourceTree = "<group>"; };
 		28BA77961DCBA7E4006492FE /* WindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WindowController.mm; sourceTree = "<group>"; };
 		28BA779A1DCBABA0006492FE /* Framebuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Framebuffer.cpp; sourceTree = "<group>"; };
@@ -68,12 +75,17 @@
 				28522BC31DCBA6D100839B04 /* MainMenu.xib */,
 				28522BC61DCBA6D100839B04 /* Info.plist */,
 				28522BBE1DCBA6D100839B04 /* Supporting Files */,
-				28522BCC1DCBA75F00839B04 /* FramebufferView.h */,
-				28522BCD1DCBA75F00839B04 /* FramebufferView.mm */,
 				28BA77951DCBA7E4006492FE /* WindowController.h */,
 				28BA77961DCBA7E4006492FE /* WindowController.mm */,
 				28BA779A1DCBABA0006492FE /* Framebuffer.cpp */,
 				28BA779B1DCBABA0006492FE /* Framebuffer.hpp */,
+				280B81C31DCC9419001BA6C9 /* Renderer.cpp */,
+				280B81C41DCC9419001BA6C9 /* Renderer.hpp */,
+				280B81C61DCC9A0E001BA6C9 /* LinearInterpolator.cpp */,
+				280B81C71DCC9A0E001BA6C9 /* LinearInterpolator.hpp */,
+				280B81C91DCC9AAA001BA6C9 /* renderlib.hpp */,
+				280B81CD1DCCA5DB001BA6C9 /* demo.cpp */,
+				280B81CE1DCCA5DB001BA6C9 /* demo.hpp */,
 			);
 			path = Renderer;
 			sourceTree = "<group>";
@@ -157,10 +169,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				280B81C51DCC9419001BA6C9 /* Renderer.cpp in Sources */,
 				28522BC01DCBA6D100839B04 /* main.m in Sources */,
 				28BA77971DCBA7E4006492FE /* WindowController.mm in Sources */,
 				28BA779C1DCBABA0006492FE /* Framebuffer.cpp in Sources */,
-				28522BCE1DCBA75F00839B04 /* FramebufferView.mm in Sources */,
+				280B81C81DCC9A0E001BA6C9 /* LinearInterpolator.cpp in Sources */,
+				280B81CF1DCCA5DB001BA6C9 /* demo.cpp in Sources */,
 				28522BBD1DCBA6D100839B04 /* AppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -191,7 +205,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -239,7 +253,7 @@
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;

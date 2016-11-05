@@ -1,86 +1,57 @@
 #import "WindowController.h"
-#import "FramebufferView.h"
 #include "Framebuffer.hpp"
+#include "Renderer.hpp"
 #include <glm/glm.hpp>
+#include "demo.hpp"
 
-using namespace Renderer;
+using namespace renderlib;
 using namespace glm;
 
+typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
+
 @interface WindowController ()
-@property (weak) IBOutlet FramebufferView *frameBufferView;
+@property (weak) IBOutlet NSView *frameBufferView;
+@property (nonatomic, copy) RenderBlock renderHandler;
 
 @end
 
-@implementation WindowController
+@implementation WindowController {
+	Renderer *_renderer;
+}
+
+- (void)dealloc {
+	delete _renderer;
+	_renderer = nullptr;
+	[[NSNotificationCenter defaultCenter] removeObserver:self];
+}
 
 - (void)awakeFromNib {
 	[super awakeFromNib];
-	
-	self.frameBufferView.renderHandler = ^(Framebuffer &framebuffer) {
-		DrawLine({70, 50}, {40, 500}, {255, 255, 255, 255}, framebuffer);
-		DrawLine({70, 50}, {400, 600}, {255, 255, 255, 255}, framebuffer);
-		DrawLine({400, 600}, {40, 500}, {255, 255, 255, 255}, framebuffer);
+	self.renderHandler = ^CGImageRef(const Framebuffer& framebuffer) {
+		CGContextRef offscreen = CGBitmapContextCreate((void*)framebuffer.pixelData(), framebuffer.getWidth(), framebuffer.getHeight(), framebuffer.getBitsPerComponent(), framebuffer.getBytesPerRow(), [NSColorSpace deviceRGBColorSpace].CGColorSpace, kCGImageAlphaPremultipliedLast);
+		// draw stuff into offscreen
+		CGImageRef image = CGBitmapContextCreateImage(offscreen);
+		CFRelease(offscreen);
+		return image;
 	};
-
+	NSRect rect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
+	_renderer = new Renderer(rect.size.width, rect.size.height);
+	_renderer->setRenderFunc(renderScene02);
+	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(frameBufferViewBoundsChanged:) name:NSViewFrameDidChangeNotification object:self.frameBufferView];
+	[self updateView];
 }
 
-void DrawLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color, Framebuffer& framebuffer) {
-	vec2 drawStart(start), drawEnd(end);
-	vec2 delta = end-start;
-	bool interpolateVertically = fabs(delta.x) > fabs(delta.y);
-	
-	if (interpolateVertically) {
-		if (start.x > end.x) {
-			std::swap(drawStart, drawEnd);
-			delta = drawEnd-drawStart;
-		}
-		int linearValue = ceil(drawStart.x);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, adjustForSubPixels(drawStart.x));
-		
-		do {
-			framebuffer.setPixel(color, linearValue++, ceil(lerp.interpolatedValue()));
-		} while(lerp.interpolate());
-	}
-	else {
-		if (start.y > end.y) {
-			std::swap(drawStart, drawEnd);
-			delta = drawEnd-drawStart;
-		}
-		int linearValue = ceil(start.y);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, adjustForSubPixels(drawStart.y));
-		
-		do {
-			framebuffer.setPixel(color, ceil(lerp.interpolatedValue()), linearValue++);
-		}
-		while (lerp.interpolate());
-	}
+- (void)frameBufferViewBoundsChanged:(NSNotification*)notification {
+	NSRect backingRect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
+	_renderer->resize(backingRect.size.width, backingRect.size.height);
+	[self updateView];
 }
 
-struct LinearInterpolator {
-public:
-	LinearInterpolator(float deltaA, float deltaB, float startValue, float offset=0) : _value(0) {
-		float relation = std::min(fabs(deltaA), fabs(deltaB)) / std::max(fabs(deltaA), fabs(deltaB));
-		_startValue = startValue + relation*offset;
-		_step = 1.f / std::max(fabs(deltaA), fabs(deltaB));
-		_delta = std::min(deltaA, deltaB);
-		_numberOfSteps = ceil(std::max(fabs(deltaA), fabs(deltaB)));
+- (void)updateView {
+	_renderer->render();
+	if (self.renderHandler) {
+		self.frameBufferView.layer.contents = (__bridge id)self.renderHandler(_renderer->frameBuffer());
 	}
-	float t(void) const { return _value; }
-	float interpolatedValue(void) const { return _startValue + _delta*t(); }
-	unsigned int interpolate(void) {
-		_value += _step;
-		return _numberOfSteps--;
-	}
-private:
-	unsigned int _numberOfSteps;
-	float _step;
-	float _value;
-	float _startValue;
-	float _delta;
-};
-
-inline float adjustForSubPixels(float value) {
-	return ceil(value) - value;
 }
 
 @end
