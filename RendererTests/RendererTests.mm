@@ -99,11 +99,22 @@ vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsig
 	vector<clipped_triangle> v;
 
 	triangle t = triangleFromVerts(verts);
-	
+
+	if (verts[t.midIndex].y < 0) {
+		int offset = abs(verts[t.midIndex].y);
+		int count = t.deltaB.y - offset;
+		float leftX = verts[t.midIndex].x + t.stepOnB*offset;
+		float rightX = verts[t.topIndex].x + t.stepOnC*(offset+t.deltaA.y);
+		return {{0, count, leftX, rightX, t.stepOnB, t.stepOnC }};
+	}
 	int y = std::ceil(verts[t.topIndex].y);
 	int count = t.deltaA.y;
 	float leftX = verts[t.topIndex].x;
 	float rightX = verts[t.topIndex].x;
+	if (verts[t.midIndex].y >= height) {
+		count = height-y;
+		return {{y, count, leftX, rightX, t.stepOnA, t.stepOnC }};
+	}
 	if (y < 0) {
 		int offset = abs(y);
 		y += offset;
@@ -113,7 +124,7 @@ vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsig
 	}
 	clipped_triangle top = {y, count, leftX, rightX, t.stepOnA, t.stepOnC };
 	v.push_back(top);
-	clipped_triangle bottom = {static_cast<int>(ceil(verts[t.midIndex].y)), static_cast<int>(t.deltaB.y), verts[t.midIndex].x, verts[t.topIndex].x + t.deltaA.y*(t.deltaA.x/t.deltaC.x), t.stepOnB, t.stepOnC };
+	clipped_triangle bottom = {static_cast<int>(ceil(verts[t.midIndex].y)), static_cast<int>(std::min(t.deltaB.y, height-verts[t.midIndex].y)), verts[t.midIndex].x, verts[t.topIndex].x + t.deltaA.y*(t.deltaA.x/t.deltaC.x), t.stepOnB, t.stepOnC };
 	v.push_back(bottom);
 	return v;
 }
@@ -147,7 +158,7 @@ vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsig
 	XCTAssertEqualWithAccuracy(v[1].rightStep, expectedCStep, .0001);
 }
 
-- (void)testClipTriangleWhichIsClippedOnTop {
+- (void)testClipTriangleWhichIsClippedOnTopVertex {
 	glm::vec2 verts[] = {
 		{100, -10}, {50, 100}, {150, 120}
 	};
@@ -176,6 +187,77 @@ vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsig
 	XCTAssertEqualWithAccuracy(v[1].rightX, expectedMidXOnC, .0001);
 	XCTAssertEqualWithAccuracy(v[1].leftStep, expectedBStep, .0001);
 	XCTAssertEqualWithAccuracy(v[1].rightStep, expectedCStep, .0001);
+}
+
+- (void)testClipTriangleWhereTheTopAndTheMidVertexIsClippedOnTop {
+	glm::vec2 verts[] = {
+		{100, -30}, {50, -10}, {150, 120}
+	};
+	vec2 expectedDeltaC = verts[2]-verts[0];
+	vec2 expectedDeltaB = verts[2]-verts[1];
+	
+	float expectedBStep = expectedDeltaB.x / expectedDeltaB.y;
+	float expectedCStep = expectedDeltaC.x / expectedDeltaC.y;
+	float expectedLeftX = 50.f + expectedBStep*10;
+	float expectedRightX = 100.f + expectedCStep*30;
+	
+	std::vector<clipped_triangle> v = clipTriangleToBounds(verts, 200, 200);
+	XCTAssertEqual(v.size(), 1);
+	XCTAssertEqual(v[0].y, 0);
+	XCTAssertEqual(v[0].count, 120);
+	XCTAssertEqualWithAccuracy(v[0].leftX, expectedLeftX, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightX, expectedRightX, .0001);
+	XCTAssertEqualWithAccuracy(v[0].leftStep, expectedBStep, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightStep, expectedCStep, .0001);
+}
+
+- (void)testClipTriangleWhereTheBottomVertexIsClipped {
+	glm::vec2 verts[] = {
+		{100, 10}, {50, 100}, {150, 220}
+	};
+	vec2 expectedDeltaC = verts[2]-verts[0];
+	vec2 expectedDeltaA = verts[1]-verts[0];
+	vec2 expectedDeltaB = verts[2]-verts[1];
+	
+	float expectedAStep = expectedDeltaA.x / expectedDeltaA.y;
+	float expectedBStep = expectedDeltaB.x / expectedDeltaB.y;
+	float expectedCStep = expectedDeltaC.x / expectedDeltaC.y;
+	float expectedMidXOnC = 100.f + (expectedDeltaA.x / expectedDeltaC.x)*90;
+	
+	std::vector<clipped_triangle> v = clipTriangleToBounds(verts, 200, 200);
+	XCTAssertEqual(v.size(), 2);
+	XCTAssertEqual(v[0].y, 10);
+	XCTAssertEqual(v[0].count, 90);
+	XCTAssertEqualWithAccuracy(v[0].leftX, 100, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightX, 100, .0001);
+	XCTAssertEqualWithAccuracy(v[0].leftStep, expectedAStep, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightStep, expectedCStep, .0001);
+	XCTAssertEqual(v[1].y, 100);
+	XCTAssertEqual(v[1].count, 100);
+	XCTAssertEqualWithAccuracy(v[1].leftX, 50, .0001);
+	XCTAssertEqualWithAccuracy(v[1].rightX, expectedMidXOnC, .0001);
+	XCTAssertEqualWithAccuracy(v[1].leftStep, expectedBStep, .0001);
+	XCTAssertEqualWithAccuracy(v[1].rightStep, expectedCStep, .0001);
+}
+
+- (void)testClipTriangleWhereTheMidAndTheBottomVertexIsClipped {
+	glm::vec2 verts[] = {
+		{100, 10}, {50, 210}, {150, 250}
+	};
+	vec2 expectedDeltaC = verts[2]-verts[0];
+	vec2 expectedDeltaA = verts[1]-verts[0];
+	
+	float expectedAStep = expectedDeltaA.x / expectedDeltaA.y;
+	float expectedCStep = expectedDeltaC.x / expectedDeltaC.y;
+	
+	std::vector<clipped_triangle> v = clipTriangleToBounds(verts, 200, 200);
+	XCTAssertEqual(v.size(), 1);
+	XCTAssertEqual(v[0].y, 10);
+	XCTAssertEqual(v[0].count, 190);
+	XCTAssertEqualWithAccuracy(v[0].leftX, 100, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightX, 100, .0001);
+	XCTAssertEqualWithAccuracy(v[0].leftStep, expectedAStep, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightStep, expectedCStep, .0001);
 }
 
 @end
