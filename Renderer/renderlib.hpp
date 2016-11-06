@@ -86,6 +86,36 @@ namespace renderlib {
 		tri.stepOnB = tri.deltaB.x / tri.deltaB.y;
 		return tri;
 	}
+	
+	inline std::tuple<glm::vec2, glm::vec2> clipLine(const glm::vec2& start, const glm::vec2& end, unsigned int width, unsigned int height) {
+		assert(start.y <= end.y);
+		
+		glm::vec2 clippedStart(start), clippedEnd(end);
+		glm::vec2 direction = end-start;
+		float stepX = direction.x / direction.y;
+		float stepY = direction.y / direction.x;
+		if (start.y < 0) {
+			float offset = fabs(start.y);
+			clippedStart.x = start.x + stepX*offset;
+			clippedStart.y = 0;
+		}
+		if (clippedStart.x < 0) {
+			float offset = fabs(start.x);
+			clippedStart.x = 0;
+			clippedStart.y = start.y + stepY*offset;
+		}
+		if (stepX >= stepY && end.x >= width) {
+			float offset = (width-1) - start.x;
+			clippedEnd.x = width-1;
+			clippedEnd.y = start.y + offset*stepY;
+		}
+		if (stepX < stepY && clippedEnd.y >= height) {
+			float offset = (height-1)-start.y;
+			clippedEnd.x = start.x + stepX*offset;
+			clippedEnd.y = height-1;
+		}
+		return std::make_tuple(clippedStart, clippedEnd);
+	}
 }
 
 #endif /* renderlib_h */

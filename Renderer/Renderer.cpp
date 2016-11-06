@@ -85,11 +85,15 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 
 void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color) {
 	vec2 drawStart(start), drawEnd(end);
-	vec2 delta = end-start;
+	if (start.y > end.y) {
+		swap(drawStart, drawEnd);
+	}
+	std::tie(drawStart, drawEnd) = clipLine(drawStart, drawEnd, _width, _height);
+	vec2 delta = drawEnd-drawStart;
 	bool interpolateVertically = fabs(delta.x) > fabs(delta.y);
 
 	if (interpolateVertically) {
-		if (start.x > end.x) {
+		if (drawStart.x > drawEnd.x) {
 			std::swap(drawStart, drawEnd);
 			delta = drawEnd-drawStart;
 		}
@@ -101,16 +105,11 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 		} while(lerp.interpolate());
 	}
 	else {
-		if (start.y > end.y) {
-			std::swap(drawStart, drawEnd);
-			delta = drawEnd-drawStart;
-		}
-		int linearValue = ceil(start.y);
+		int linearValue = ceil(drawStart.y);
 		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, subpixelAdjust(drawStart.y));
-		
-		while (lerp.interpolate() && linearValue < _height) {
+		do {
 			_buffer.setPixel(color, ceil(lerp.interpolatedValue()), linearValue++);
-		};
+		} while(lerp.interpolate());
 	}
 }
 
