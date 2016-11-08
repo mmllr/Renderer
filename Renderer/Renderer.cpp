@@ -43,14 +43,14 @@ void Renderer::setRenderFunc(std::function<void (Renderer&)> handler) {
 	_renderFunction = handler;
 }
 
-void Renderer::setVertexShader(std::function<vec4 (const mat4& mvp, const Vertex& vertex)> vertexShader) {
+void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vertex& vertex)> vertexShader) {
 	_vertexShader = vertexShader;
 }
 
 void Renderer::setVertexBuffer(const vector<Vertex>& vertexBuffer) {
 	_vertexBuffer = vertexBuffer;
-	_clipPositions.resize(vertexBuffer.size());
-	_ndcPositions.resize(vertexBuffer.size());
+	_clipVertexes.resize(vertexBuffer.size());
+	_ndcVertexes.resize(vertexBuffer.size());
 }
 
 void Renderer::setIndexBuffer(const vector<uint32_t>& indexBuffer) {
@@ -72,39 +72,40 @@ void Renderer::render(void) {
 	}
 }
 
-vector<vec4> Renderer::transformAndClipTriangle(int startIndex) {
+vector<Vertex> Renderer::transformAndClipTriangle(int startIndex) {
 	mat4 mvp = _projection*_modelView;
 
 	uint32_t first = _indexBuffer[startIndex];
 	uint32_t second = _indexBuffer[startIndex+1];
 	uint32_t third = _indexBuffer[startIndex+2];
-	_clipPositions[first] = _vertexShader(mvp, _vertexBuffer[first]);
-	_clipPositions[second] = _vertexShader(mvp, _vertexBuffer[second]);
-	_clipPositions[third] = _vertexShader(mvp, _vertexBuffer[third]);
+	_clipVertexes[first] = _vertexShader(mvp, _vertexBuffer[first]);
+	_clipVertexes[second] = _vertexShader(mvp, _vertexBuffer[second]);
+	_clipVertexes[third] = _vertexShader(mvp, _vertexBuffer[third]);
 	
-	return clipTriangleToFrustum({_clipPositions[first], _clipPositions[second], _clipPositions[third]});
+	return clipTriangleToFrustum({_clipVertexes[first], _clipVertexes[second], _clipVertexes[third]});
 }
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
-	vec2 verts[3];
+	Vertex verts[3];
 	Pixel colors[] = {{255, 255, 255, 255}, {255, 0, 0, 255}};
 	
 	for (unsigned int i = 0; i < count*3; i += 3) {
-		vector<vec4> clippedPoly = transformAndClipTriangle(firstVertexIndex+i);
+		vector<Vertex> clippedPoly = transformAndClipTriangle(firstVertexIndex+i);
 		
 		if (clippedPoly.size() < 3) {
 			continue;
 		}
-		_ndcPositions.resize(clippedPoly.size());
+		_ndcVertexes.resize(clippedPoly.size());
 		for (int p = 0; p < clippedPoly.size(); ++p) {
-			float oneOverW = 1./clippedPoly[p].w;
-			_ndcPositions[p] = clippedPoly[p]*oneOverW;
+			float oneOverW = 1./clippedPoly[p].position.w;
+			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
+			_ndcVertexes[p].position.w = oneOverW;
 		}
 
-		verts[0] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[0], _x, _y, _width, _height, _nearZ, _farZ);
+		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
 		for (int p = 1; p < clippedPoly.size()-1; ++p) {
-			verts[1] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[p], _x, _y, _width, _height, _nearZ, _farZ);
-			verts[2] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[p+1], _x, _y, _width, _height, _nearZ, _farZ);
+			verts[1].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p].position, _x, _y, _width, _height, _nearZ, _farZ);
+			verts[2].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p+1].position, _x, _y, _width, _height, _nearZ, _farZ);
 			
 			rasterizeTriangle(verts, colors[1]);
 		}
@@ -140,22 +141,22 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 	}
 }
 
-void Renderer::rasterizeTriangle(const glm::vec2 (&verts)[3], const Pixel& color) {
+void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
 	triangle t = triangleFromVerts(verts);
 
 	if (t.leftAndRightOnTop) {
-		float y = verts[t.topIndex].y;
-		edgeLoop(t.heightOfC, floor(y), verts[t.topIndex].x + fract(y)*t.stepOnB, verts[t.midIndex].x + fract(y)*t.stepOnC, t.stepOnC, t.stepOnB, color);
+		float y = verts[t.topIndex].position.y;
+		edgeLoop(t.heightOfC, floor(y), verts[t.topIndex].position.x + fract(y)*t.stepOnB, verts[t.midIndex].position.x + fract(y)*t.stepOnC, t.stepOnC, t.stepOnB, color);
 		return;
 	}
-	float y = verts[t.topIndex].y;
+	float y = verts[t.topIndex].position.y;
 	float leftOffset = t.leftSideIsC ? fract(y)*t.stepOnC : fract(y)*t.stepOnA;
 	float rightOffset = t.leftSideIsC ? fract(y)*t.stepOnA : fract(y)*t.stepOnC;
-	edgeLoop(t.heightOfA, floor(y),  verts[t.topIndex].x + leftOffset,  verts[t.topIndex].x + rightOffset, t.leftSideIsC ? t.stepOnC : t.stepOnA, t.leftSideIsC ? t.stepOnA : t.stepOnC, color);
-	y = verts[t.midIndex].y;
-	float xOnC = verts[t.topIndex].x + (t.stepOnC * t.heightOfA) + fract(y)*t.stepOnC;
-	float leftX = t.leftSideIsC ? xOnC : verts[t.midIndex].x + fract(y)*t.stepOnB;
-	float rightX = t.leftSideIsC ? verts[t.midIndex].x + fract(y)*t.stepOnB: xOnC;
+	edgeLoop(t.heightOfA, floor(y),  verts[t.topIndex].position.x + leftOffset,  verts[t.topIndex].position.x + rightOffset, t.leftSideIsC ? t.stepOnC : t.stepOnA, t.leftSideIsC ? t.stepOnA : t.stepOnC, color);
+	y = verts[t.midIndex].position.y;
+	float xOnC = verts[t.topIndex].position.x + (t.stepOnC * t.heightOfA) + fract(y)*t.stepOnC;
+	float leftX = t.leftSideIsC ? xOnC : verts[t.midIndex].position.x + fract(y)*t.stepOnB;
+	float rightX = t.leftSideIsC ? verts[t.midIndex].position.x + fract(y)*t.stepOnB: xOnC;
 	edgeLoop(t.heightOfB, floor(y), leftX, rightX, t.leftSideIsC ? t.stepOnC : t.stepOnB, t.leftSideIsC ? t.stepOnB : t.stepOnC, color);
 }
 

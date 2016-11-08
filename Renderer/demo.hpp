@@ -8,6 +8,6 @@ using namespace glm;
 using namespace renderlib;
 
 void renderScene01(renderlib::Renderer& render);
-vec4 basicVertexShader(const mat4& mvp, const Vertex& vertex);
+Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex);
 
 #endif /* demo_hpp */

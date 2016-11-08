@@ -7,18 +7,18 @@ using namespace renderlib;
 using namespace std;
 using namespace glm;
 
-vec4 basicVertexShader(const mat4& mvp, const Vertex& vertex) {
-	return mvp * vertex.position;
+Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex) {
+	return {mvp * vertex.position};
 }
 
 void renderScene01(renderlib::Renderer& renderer) {
 	static float angle = 0;
 
 	vector<Vertex> vertexes = {
-		{{-.25f, .25f, -1.f, 1}},
-		{{.25f, .25f, -1.f, 1}},
-		{{.25f, -.25f, -1.f, 1}},
-		{{-.25f, -.25f, -1.f, 1}}
+		{{-.25f, .25f, -1.f, 1}, {1.f, 0, 0, 1}},
+		{{.25f, .25f, -1.f, 1}, {0, 1.f, 0, 1}},
+		{{.25f, -.25f, -1.f, 1}, {0, 0, 1.f, 1}},
+		{{-.25f, -.25f, -1.f, 1}, {1.f, 0, 1.f, 1}}
 	};
 	vector<unsigned int> indices = {0, 1, 2, 0, 2, 3};
 

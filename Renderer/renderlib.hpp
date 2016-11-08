@@ -13,6 +13,7 @@ namespace renderlib {
 	
 	struct Vertex {
 		glm::vec4 position;
+		glm::vec4 color;
 	};
 	
 	struct triangle {
@@ -49,7 +50,7 @@ namespace renderlib {
 		return theIndex > 0 ? theIndex-1 : 2;
 	}
 	
-	inline std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const glm::vec2 (&verts)[3]) {
+	inline std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const Vertex (&verts)[3]) {
 		unsigned int top{0}, bottom{0}, left{0}, right{0};
 		float minX = std::numeric_limits<float>::max();
 		float maxX = std::numeric_limits<float>::lowest();
@@ -57,43 +58,43 @@ namespace renderlib {
 		float maxY = std::numeric_limits<float>::lowest();
 		
 		for (unsigned int i = 0; i < 3; ++i) {
-			if (verts[i].x < minX) {
+			if (verts[i].position.x < minX) {
 				left = i;
-				minX = verts[i].x;
+				minX = verts[i].position.x;
 			}
-			if (verts[i].x > maxX) {
+			if (verts[i].position.x > maxX) {
 				right = i;
-				maxX = verts[i].x;
+				maxX = verts[i].position.x;
 			}
-			if (verts[i].y > maxY) {
+			if (verts[i].position.y > maxY) {
 				top = i;
-				maxY = verts[i].y;
+				maxY = verts[i].position.y;
 			}
-			if (verts[i].y < minY) {
+			if (verts[i].position.y < minY) {
 				bottom = i;
-				minY = verts[i].y;
+				minY = verts[i].position.y;
 			}
 		}
 		return std::make_tuple(left, top, right, bottom);
 	}
 	
-	inline triangle triangleFromVerts(const glm::vec2 (&verts)[3]) {
+	inline triangle triangleFromVerts(const Vertex (&verts)[3]) {
 		triangle t;
 
 		std::tie(t.leftIndex, t.topIndex, t.rightIndex, t.bottomIndex) = categorizedIndices(verts);
 		t.leftSideIsC = previousIndexInTriangle(t.topIndex) == t.bottomIndex;
 		t.midIndex = t.leftSideIsC ? nextIndexInTriangle(t.topIndex) : previousIndexInTriangle(t.topIndex);
-		t.leftAndRightOnTop = floor(verts[t.topIndex].y) == floor(verts[t.midIndex].y);
+		t.leftAndRightOnTop = floor(verts[t.topIndex].position.y) == floor(verts[t.midIndex].position.y);
 		if (t.leftAndRightOnTop) {
-			if (verts[t.topIndex].x > verts[t.midIndex].x) {
+			if (verts[t.topIndex].position.x > verts[t.midIndex].position.x) {
 				int tmp = t.topIndex;
 				t.topIndex = t.midIndex;
 				t.midIndex = tmp;
 			}
 		}
-		glm::vec2 c = verts[t.bottomIndex] - verts[t.topIndex];
-		glm::vec2 a = t.leftAndRightOnTop ? verts[t.bottomIndex] - verts[nextIndexInTriangle(t.topIndex)] : verts[t.midIndex] - verts[t.topIndex];
-		glm::vec2 b = verts[t.bottomIndex] - verts[t.midIndex];
+		glm::vec4 c = verts[t.bottomIndex].position - verts[t.topIndex].position;
+		glm::vec4 a = t.leftAndRightOnTop ? verts[t.bottomIndex].position - verts[nextIndexInTriangle(t.topIndex)].position : verts[t.midIndex].position - verts[t.topIndex].position;
+		glm::vec4 b = verts[t.bottomIndex].position - verts[t.midIndex].position;
 
 		t.deltaA = a.x;
 		t.deltaB = b.x;
@@ -138,11 +139,11 @@ namespace renderlib {
 	}
 	
 	
-	inline glm::vec3 convertNormalizedDeviceCoordateToWindow(const glm::vec3& v, float x, float y, float width, float height, float nearZ, float farZ) {
+	inline glm::vec4 convertNormalizedDeviceCoordateToWindow(const glm::vec4& v, float x, float y, float width, float height, float nearZ, float farZ) {
 		width = width-1;
 		height = height-1;
 		return {
-			v.x * (width/2) + (x + (width/2)), v.y * (height/2) + (y + (height/2)), ((farZ-nearZ)/2)*v.z + (farZ+nearZ)/2
+			v.x * (width/2) + (x + (width/2)), v.y * (height/2) + (y + (height/2)), ((farZ-nearZ)/2)*v.z + (farZ+nearZ)/2, v.w
 		};
 	}
 	
@@ -170,9 +171,10 @@ namespace renderlib {
 		return a / (a-b);
 	}
 	
-	inline glm::vec4 intersectVertex(const glm::vec4& p0, const glm::vec4& p1, ClipPlane plane) {
+	inline Vertex intersectVertex(const Vertex& v0, const Vertex& v1, ClipPlane plane) {
 		float a;
-		
+		const glm::vec4 & p0 = v0.position;
+		const glm::vec4 & p1 = v1.position;
 		switch (plane)	{
 			case left:
 				a = interpolationFactor(p0.w + p0.x, p1.w + p1.x);
@@ -193,31 +195,31 @@ namespace renderlib {
 				a = interpolationFactor(p0.w - p0.z, p1.w - p1.z);
 				break;
 		};
-		return (1.f-a) * p0 + a * p1;
+		return {{(1.f-a) * p0 + a * p1}, {(1.f-a)*v0.color + a * v1.color}};
 	}
 	
-	inline std::vector<glm::vec4> clipPolygonToPlane(const std::vector<glm::vec4>& verts, ClipPlane plane) {
-		std::vector<glm::vec4> clippedPolygon;
+	inline std::vector<Vertex> clipPolygonToPlane(const std::vector<Vertex>& verts, ClipPlane plane) {
+		std::vector<Vertex> clippedPolygon;
 		
 		for (int i = 0; i < verts.size(); ++i) {
 			int nextIndex = i == verts.size()-1 ? 0 : i+1;
-			glm::vec4 p0 = verts[i];
-			glm::vec4 p1 = verts[nextIndex];
-			bool p0Visible = isVertexInsidePlane(p0, plane);
-			bool p1Visible = isVertexInsidePlane(p1, plane);
+			const Vertex& v0 = verts[i];
+			const Vertex& v1 = verts[nextIndex];
+			bool p0Visible = isVertexInsidePlane(v0.position, plane);
+			bool p1Visible = isVertexInsidePlane(v1.position, plane);
 			
 			if (p0Visible != p1Visible) {
-				clippedPolygon.push_back(intersectVertex(p0, p1, plane));
+				clippedPolygon.push_back(intersectVertex(v0, v1, plane));
 			}
 			if (p1Visible) {
-				clippedPolygon.push_back(p1);
+				clippedPolygon.push_back(v1);
 			}
 		}
 		return clippedPolygon;
 	}
 	
-	inline std::vector<glm::vec4> clipTriangleToFrustum(const std::vector<glm::vec4>& verts) {
-		std::vector<glm::vec4> clippedPolygon = clipPolygonToPlane(verts, left);
+	inline std::vector<Vertex> clipTriangleToFrustum(const std::vector<Vertex>& verts) {
+		std::vector<Vertex> clippedPolygon = clipPolygonToPlane(verts, left);
 		clippedPolygon = clipPolygonToPlane(clippedPolygon, right);
 		clippedPolygon = clipPolygonToPlane(clippedPolygon, top);
 		clippedPolygon = clipPolygonToPlane(clippedPolygon, bottom);
