@@ -13,7 +13,7 @@ using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _projection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f)) {
 	
 }
 
@@ -31,6 +31,7 @@ void Renderer::setViewport(unsigned int x, unsigned int y, unsigned int width, u
 	_width = width;
 	_height = height;
 	_buffer.resize(width, height);
+	setProjection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f));
 }
 
 void Renderer::setDepthRange(float nearZ, float farZ) {
@@ -40,6 +41,10 @@ void Renderer::setDepthRange(float nearZ, float farZ) {
 
 void Renderer::setRenderFunc(std::function<void (Renderer&)> handler) {
 	_renderFunction = handler;
+}
+
+void Renderer::setVertexShader(std::function<vec4 (const mat4& mvp, const Vertex& vertex)> vertexShader) {
+	_vertexShader = vertexShader;
 }
 
 void Renderer::setVertexBuffer(const vector<Vertex>& vertexBuffer) {
@@ -56,6 +61,10 @@ void Renderer::setModelView(const glm::mat4& modelView) {
 	_modelView = modelView;
 }
 
+void Renderer::setProjection(const glm::mat4& projection) {
+	_projection = projection;
+}
+
 void Renderer::render(void) {
 	_buffer.fill(_clearColor);
 	if (_renderFunction) {
@@ -63,29 +72,25 @@ void Renderer::render(void) {
 	}
 }
 
-glm::mat4 camera(float Translate, glm::vec2 const & Rotate) {
-	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 1000.f);
-	glm::mat4 View = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -Translate));
-	View = glm::rotate(View, Rotate.y, glm::vec3(-1.0f, 0.0f, 0.0f));
-	View = glm::rotate(View, Rotate.x, glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
-	return Projection * View * Model;
+void Renderer::transformTriangle(int startIndex) {
+	for (int i = startIndex; i < 3; ++i) {
+		int vertexIndex = _indexBuffer[i];
+		_clipPositions[vertexIndex] = _vertexShader(_projection*_modelView, _vertexBuffer[vertexIndex]);
+	}
 }
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
-	float aspect = (float)_width/_height;
-	mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 1000.f);
-	mat4 m = projection*_modelView;
 	vec2 verts[3];
 	Pixel colors[] = {{255, 255, 255, 255}, {255, 0, 0, 255}};
+	mat4 mvp = _projection*_modelView;
 	
-	for (unsigned int i = firstVertexIndex; i < firstVertexIndex+count; ++i) {
+	for (unsigned int i = firstVertexIndex; i < firstVertexIndex+count*3; i += 3) {
 		uint32_t first = _indexBuffer[i];
 		uint32_t second = _indexBuffer[i+1];
 		uint32_t third = _indexBuffer[i+2];
-		_clipPositions[first] = m * _vertexBuffer[first].position;
-		_clipPositions[second] = m * _vertexBuffer[second].position;
-		_clipPositions[third] = m * _vertexBuffer[third].position;
+		_clipPositions[first] = _vertexShader(mvp, _vertexBuffer[first]);
+		_clipPositions[second] = _vertexShader(mvp, _vertexBuffer[second]);
+		_clipPositions[third] = _vertexShader(mvp, _vertexBuffer[third]);
 
 		vector<vec4> clippedPoly = clipTriangleToFrustum({_clipPositions[first], _clipPositions[second], _clipPositions[third]});
 		
@@ -176,7 +181,7 @@ void Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, flo
 	while (numberOfSteps--) {
 		int left = ceil(leftX);
 		int right = ceil(rightX);
-		drawSpan(left, right, yPos--, color);
+		drawSpan(floor(left), ceil(right), yPos--, color);
 		leftX += leftStep;
 		rightX += rightStep;
 	}

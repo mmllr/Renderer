@@ -2,8 +2,12 @@
 #define demo_hpp
 
 #include "Renderer.hpp"
+#include <glm/glm.hpp>
+
+using namespace glm;
+using namespace renderlib;
 
 void renderScene01(renderlib::Renderer& render);
-void renderScene02(renderlib::Renderer& render);
+vec4 basicVertexShader(const mat4& mvp, const Vertex& vertex);
 
 #endif /* demo_hpp */
