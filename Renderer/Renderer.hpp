@@ -32,12 +32,10 @@ namespace renderlib {
 		vector<Vertex> transformAndClipTriangle(int startIndex);
 		void rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color);
 		void rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color);
-		bool isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const;
-		void edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep, const Pixel& color);
 		void edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps);
 		std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const Vertex (&verts)[3]) const;
 		void drawSpan(int leftX, int rightX, int y, const Pixel& color);
-		void drawSpan(const Vertex& left, const Vertex& right, int y);
+		void drawSpan(const Vertex& left, const Vertex& right, float y);
 		unsigned int _x, _y, _width, _height;
 		float _nearZ, _farZ;
 		Pixel _clearColor;

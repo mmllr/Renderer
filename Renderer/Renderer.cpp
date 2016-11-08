@@ -173,7 +173,7 @@ void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
 	}
 }
 
-void Renderer::drawSpan(const Vertex& left, const Vertex& right, int y) {
+void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	drawSpan(left.position.x, right.position.x, y, {255, 255, 0, 255});
 }
 
@@ -184,28 +184,4 @@ void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const
 		Vertex right = {(1.f-a)*rightStart.position + a*rightDest.position};
 		drawSpan(left, right, leftStart.position.y - i);
 	}
-}
-
-
-void Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep, const Pixel& color) {
-	assert(numberOfSteps >= 0);
-
-	int yPos = y;
-	while (numberOfSteps--) {
-		int left = ceil(leftX);
-		int right = ceil(rightX);
-		drawSpan(floor(left), ceil(right), yPos--, color);
-		leftX += leftStep;
-		rightX += rightStep;
-	}
-}
-
-bool Renderer::isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const {
-	if (verts[t.rightIndex].x < _x ||
-		verts[t.bottomIndex].y < _y ||
-		verts[t.leftIndex].x >= _width ||
-		verts[t.topIndex].y >= _height) {
-		return false;
-	}
-	return true;
 }
