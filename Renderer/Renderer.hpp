@@ -18,6 +18,7 @@ namespace renderlib {
 		void setClearColor(const Pixel& clearColor);
 		void setRenderFunc(std::function<void (Renderer&)> handler);
 		void setVertexShader(std::function<Vertex (const mat4& mvp, const Vertex& vertex)> vertexShader);
+		void setPixelShader(std::function<Pixel (const vec4& fragCoord)> pixelShader);
 		void render(void);
 		const Framebuffer& frameBuffer(void) const;
 		void setViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
@@ -33,14 +34,17 @@ namespace renderlib {
 		void rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color);
 		bool isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const;
 		void edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep, const Pixel& color);
+		void edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps);
 		std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const Vertex (&verts)[3]) const;
 		void drawSpan(int leftX, int rightX, int y, const Pixel& color);
+		void drawSpan(const Vertex& left, const Vertex& right, int y);
 		unsigned int _x, _y, _width, _height;
 		float _nearZ, _farZ;
 		Pixel _clearColor;
 		Framebuffer _buffer;
 		std::function<void (Renderer&)> _renderFunction;
 		std::function<Vertex (const mat4& mvp, const Vertex& vertex)> _vertexShader;
+		std::function<Pixel (const vec4& fragCoord)> _pixelShader;
 		vector<Vertex> _vertexBuffer;
 		vector<uint32_t> _indexBuffer;
 		vector<Vertex> _clipVertexes;

@@ -35,12 +35,6 @@ namespace renderlib {
 		float stepOnB;
 	};
 	
-	struct clipped_triangle {
-		int y;
-		int count;
-		float leftX, rightX, leftStep, rightStep;
-	};
-
 
 	inline unsigned int nextIndexInTriangle(unsigned int theIndex) {
 		return theIndex < 2 ? theIndex+1 : 0;

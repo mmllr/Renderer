@@ -47,6 +47,10 @@ void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vert
 	_vertexShader = vertexShader;
 }
 
+void Renderer::setPixelShader(std::function<Pixel (const vec4& fragCoord)> pixelShader) {
+	_pixelShader = pixelShader;
+}
+
 void Renderer::setVertexBuffer(const vector<Vertex>& vertexBuffer) {
 	_vertexBuffer = vertexBuffer;
 	_clipVertexes.resize(vertexBuffer.size());
@@ -143,24 +147,19 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 
 void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
 	triangle t = triangleFromVerts(verts);
-
+	
 	if (t.leftAndRightOnTop) {
-		float y = verts[t.topIndex].position.y;
-		edgeLoop(t.heightOfC, floor(y), verts[t.topIndex].position.x + fract(y)*t.stepOnB, verts[t.midIndex].position.x + fract(y)*t.stepOnC, t.stepOnC, t.stepOnB, color);
+		edgeLoop(verts[t.topIndex], verts[t.midIndex], verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfC);
 		return;
 	}
-	float y = verts[t.topIndex].position.y;
-	float leftOffset = t.leftSideIsC ? fract(y)*t.stepOnC : fract(y)*t.stepOnA;
-	float rightOffset = t.leftSideIsC ? fract(y)*t.stepOnA : fract(y)*t.stepOnC;
-	edgeLoop(t.heightOfA, floor(y),  verts[t.topIndex].position.x + leftOffset,  verts[t.topIndex].position.x + rightOffset, t.leftSideIsC ? t.stepOnC : t.stepOnA, t.leftSideIsC ? t.stepOnA : t.stepOnC, color);
-	y = verts[t.midIndex].position.y;
-	float xOnC = verts[t.topIndex].position.x + (t.stepOnC * t.heightOfA) + fract(y)*t.stepOnC;
-	float leftX = t.leftSideIsC ? xOnC : verts[t.midIndex].position.x + fract(y)*t.stepOnB;
-	float rightX = t.leftSideIsC ? verts[t.midIndex].position.x + fract(y)*t.stepOnB: xOnC;
-	edgeLoop(t.heightOfB, floor(y), leftX, rightX, t.leftSideIsC ? t.stepOnC : t.stepOnB, t.leftSideIsC ? t.stepOnB : t.stepOnC, color);
+	float a = ((float)t.heightOfA)/t.heightOfC;
+	Vertex vOnC = {verts[t.topIndex].position*(1.f-a) + verts[t.bottomIndex].position*a, {0.f,0.f,0.f,0.f}};
+	edgeLoop(verts[t.topIndex], verts[t.topIndex], t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, t.heightOfA);
+	edgeLoop(t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfB);
 }
 
 void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
+	//assert(leftX <= rightX);
 	if (leftX > rightX) {
 		std::swap(leftX, rightX);
 	}
@@ -168,9 +167,25 @@ void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
 		return;
 	}
 	while (leftX++ <= rightX) {
-		_buffer.setPixel(color, leftX, y);
+		if (_pixelShader != nullptr) {
+			_buffer.setPixel(_pixelShader(vec4(leftX, y, 0, 0)), leftX, y);
+		}
 	}
 }
+
+void Renderer::drawSpan(const Vertex& left, const Vertex& right, int y) {
+	drawSpan(left.position.x, right.position.x, y, {255, 255, 0, 255});
+}
+
+void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps) {
+	for (int i = 0; i < numSteps; ++i) {
+		float a = ((float)i)/numSteps;
+		Vertex left = {(1.f-a)*leftStart.position + a*leftDest.position};
+		Vertex right = {(1.f-a)*rightStart.position + a*rightDest.position};
+		drawSpan(left, right, leftStart.position.y - i);
+	}
+}
+
 
 void Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep, const Pixel& color) {
 	assert(numberOfSteps >= 0);

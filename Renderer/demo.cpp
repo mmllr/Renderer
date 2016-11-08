@@ -11,6 +11,10 @@ Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex) {
 	return {mvp * vertex.position};
 }
 
+Pixel basicPixelShader(const vec4& fragCoord) {
+	return {0, 255, 0, 255};
+}
+
 void renderScene01(renderlib::Renderer& renderer) {
 	static float angle = 0;
 
@@ -32,6 +36,6 @@ void renderScene01(renderlib::Renderer& renderer) {
 	renderer.setModelView(modelView);
 	
 	renderer.drawTriangles(0, 2);
-	//distance += 10;
+
 	angle = angle >= 360 ? 0 : angle + 1;
 }

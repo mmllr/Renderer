@@ -36,8 +36,10 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	};
 	NSRect rect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
 	_renderer = new Renderer(rect.size.width, rect.size.height);
-	_renderer->setRenderFunc(renderScene01);
 	_renderer->setVertexShader(basicVertexShader);
+	_renderer->setPixelShader(basicPixelShader);
+	_renderer->setRenderFunc(renderScene01);
+	
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(frameBufferViewBoundsChanged:) name:NSViewFrameDidChangeNotification object:self.frameBufferView];
 	[self updateView];
 	[NSTimer scheduledTimerWithTimeInterval:.01 repeats:YES block:^(NSTimer * _Nonnull timer) {
