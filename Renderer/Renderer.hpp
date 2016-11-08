@@ -28,7 +28,7 @@ namespace renderlib {
 		void setModelView(const glm::mat4& modelView);
 		void setProjection(const glm::mat4& projection);
 	private:
-		void transformTriangle(int startIndex);
+		vector<vec4> transformAndClipTriangle(int startIndex);
 		void rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color);
 		void rasterizeTriangle(const glm::vec2 (&verts)[3], const Pixel& color);
 		bool isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const;

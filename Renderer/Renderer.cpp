@@ -72,32 +72,29 @@ void Renderer::render(void) {
 	}
 }
 
-void Renderer::transformTriangle(int startIndex) {
-	for (int i = startIndex; i < 3; ++i) {
-		int vertexIndex = _indexBuffer[i];
-		_clipPositions[vertexIndex] = _vertexShader(_projection*_modelView, _vertexBuffer[vertexIndex]);
-	}
+vector<vec4> Renderer::transformAndClipTriangle(int startIndex) {
+	mat4 mvp = _projection*_modelView;
+
+	uint32_t first = _indexBuffer[startIndex];
+	uint32_t second = _indexBuffer[startIndex+1];
+	uint32_t third = _indexBuffer[startIndex+2];
+	_clipPositions[first] = _vertexShader(mvp, _vertexBuffer[first]);
+	_clipPositions[second] = _vertexShader(mvp, _vertexBuffer[second]);
+	_clipPositions[third] = _vertexShader(mvp, _vertexBuffer[third]);
+	
+	return clipTriangleToFrustum({_clipPositions[first], _clipPositions[second], _clipPositions[third]});
 }
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 	vec2 verts[3];
 	Pixel colors[] = {{255, 255, 255, 255}, {255, 0, 0, 255}};
-	mat4 mvp = _projection*_modelView;
 	
-	for (unsigned int i = firstVertexIndex; i < firstVertexIndex+count*3; i += 3) {
-		uint32_t first = _indexBuffer[i];
-		uint32_t second = _indexBuffer[i+1];
-		uint32_t third = _indexBuffer[i+2];
-		_clipPositions[first] = _vertexShader(mvp, _vertexBuffer[first]);
-		_clipPositions[second] = _vertexShader(mvp, _vertexBuffer[second]);
-		_clipPositions[third] = _vertexShader(mvp, _vertexBuffer[third]);
-
-		vector<vec4> clippedPoly = clipTriangleToFrustum({_clipPositions[first], _clipPositions[second], _clipPositions[third]});
+	for (unsigned int i = 0; i < count*3; i += 3) {
+		vector<vec4> clippedPoly = transformAndClipTriangle(firstVertexIndex+i);
 		
 		if (clippedPoly.size() < 3) {
 			continue;
 		}
-
 		_ndcPositions.resize(clippedPoly.size());
 		for (int p = 0; p < clippedPoly.size(); ++p) {
 			float oneOverW = 1./clippedPoly[p].w;
