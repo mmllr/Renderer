@@ -3,13 +3,17 @@
 #include <tuple>
 #include <algorithm>
 #include <cassert>
+#undef GLM_LEFT_HANDED
 #include <glm/gtc/matrix_transform.hpp>
+#include <cstdio>
+#include <iostream>
+
 
 using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _width(width), _height(height), _buffer(width, height), _clearColor({0, 0, 0, 255}) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}) {
 	
 }
 
@@ -21,10 +25,17 @@ void Renderer::setClearColor(const renderlib::Pixel &clearColor) {
 	_clearColor = clearColor;
 }
 
-void Renderer::resize(unsigned int width, unsigned int height) {
+void Renderer::setViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+	_x = x;
+	_y = y;
 	_width = width;
 	_height = height;
 	_buffer.resize(width, height);
+}
+
+void Renderer::setDepthRange(float nearZ, float farZ) {
+	_nearZ = nearZ;
+	_farZ = farZ;
 }
 
 void Renderer::setRenderFunc(std::function<void (Renderer&)> handler) {
@@ -33,6 +44,8 @@ void Renderer::setRenderFunc(std::function<void (Renderer&)> handler) {
 
 void Renderer::setVertexBuffer(const vector<Vertex>& vertexBuffer) {
 	_vertexBuffer = vertexBuffer;
+	_clipPositions.resize(vertexBuffer.size());
+	_ndcPositions.resize(vertexBuffer.size());
 }
 
 void Renderer::setIndexBuffer(const vector<uint32_t>& indexBuffer) {
@@ -50,8 +63,7 @@ void Renderer::render(void) {
 	}
 }
 
-glm::mat4 camera(float Translate, glm::vec2 const & Rotate)
-{
+glm::mat4 camera(float Translate, glm::vec2 const & Rotate) {
 	glm::mat4 Projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 1000.f);
 	glm::mat4 View = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -Translate));
 	View = glm::rotate(View, Rotate.y, glm::vec3(-1.0f, 0.0f, 0.0f));
@@ -61,25 +73,39 @@ glm::mat4 camera(float Translate, glm::vec2 const & Rotate)
 }
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
-	vector<glm::vec4> transformedPositions(_vertexBuffer.size());
-	mat4 projection = glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 1000.f);
-	mat4 m = projection * _modelView;
+	float aspect = (float)_width/_height;
+	mat4 projection = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 1000.f);
+	mat4 m = projection*_modelView;
+	vec2 verts[3];
+	Pixel colors[] = {{255, 255, 255, 255}, {255, 0, 0, 255}};
 	
 	for (unsigned int i = firstVertexIndex; i < firstVertexIndex+count; ++i) {
 		uint32_t first = _indexBuffer[i];
 		uint32_t second = _indexBuffer[i+1];
 		uint32_t third = _indexBuffer[i+2];
-		transformedPositions[first] = m * _vertexBuffer[first].position;
-		transformedPositions[second] = m * _vertexBuffer[second].position;
-		transformedPositions[third] = m * _vertexBuffer[third].position;
+		_clipPositions[first] = m * _vertexBuffer[first].position;
+		_clipPositions[second] = m * _vertexBuffer[second].position;
+		_clipPositions[third] = m * _vertexBuffer[third].position;
 
-		vec2 verts[3] = {
-			vec2(transformedPositions[first]),
-			vec2(transformedPositions[second]),
-			vec2(transformedPositions[third])
-		};
+		vector<vec4> clippedPoly = clipTriangleToFrustum({_clipPositions[first], _clipPositions[second], _clipPositions[third]});
 		
-		rasterizeTriangle(verts);
+		if (clippedPoly.size() < 3) {
+			continue;
+		}
+
+		_ndcPositions.resize(clippedPoly.size());
+		for (int p = 0; p < clippedPoly.size(); ++p) {
+			float oneOverW = 1./clippedPoly[p].w;
+			_ndcPositions[p] = clippedPoly[p]*oneOverW;
+		}
+
+		verts[0] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[0], _x, _y, _width, _height, _nearZ, _farZ);
+		for (int p = 1; p < clippedPoly.size()-1; ++p) {
+			verts[1] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[p], _x, _y, _width, _height, _nearZ, _farZ);
+			verts[2] = convertNormalizedDeviceCoordateToWindow(_ndcPositions[p+1], _x, _y, _width, _height, _nearZ, _farZ);
+			
+			rasterizeTriangle(verts, colors[1]);
+		}
 	}
 }
 
@@ -88,7 +114,6 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 	if (start.y > end.y) {
 		swap(drawStart, drawEnd);
 	}
-	std::tie(drawStart, drawEnd) = clipLine(drawStart, drawEnd, _width, _height);
 	vec2 delta = drawEnd-drawStart;
 	bool interpolateVertically = fabs(delta.x) > fabs(delta.y);
 
@@ -97,107 +122,69 @@ void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const
 			std::swap(drawStart, drawEnd);
 			delta = drawEnd-drawStart;
 		}
-		int linearValue = ceil(drawStart.x);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, subpixelAdjust(drawStart.x));
+		int linearValue = floor(drawStart.x);
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, fract(drawStart.x));
 		
 		do {
-			_buffer.setPixel(color, linearValue++, ceil(lerp.interpolatedValue()));
+			_buffer.setPixel(color, linearValue++, floor(lerp.interpolatedValue()));
 		} while(lerp.interpolate());
 	}
 	else {
-		int linearValue = ceil(drawStart.y);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, subpixelAdjust(drawStart.y));
+		int linearValue = floor(drawStart.y);
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, fract(drawStart.y));
 		do {
-			_buffer.setPixel(color, ceil(lerp.interpolatedValue()), linearValue++);
+			_buffer.setPixel(color, floor(lerp.interpolatedValue()), linearValue++);
 		} while(lerp.interpolate());
 	}
 }
 
-void Renderer::rasterizeTriangle(const glm::vec2 (&verts)[3]) {
+void Renderer::rasterizeTriangle(const glm::vec2 (&verts)[3], const Pixel& color) {
 	triangle t = triangleFromVerts(verts);
-	
-	if (!isTrianglePotentialVisible(verts, t)) {
+
+	if (t.leftAndRightOnTop) {
+		float y = verts[t.topIndex].y;
+		edgeLoop(t.heightOfC, floor(y), verts[t.topIndex].x + fract(y)*t.stepOnB, verts[t.midIndex].x + fract(y)*t.stepOnC, t.stepOnC, t.stepOnB, color);
 		return;
 	}
-/*	
-	int y = ceil(verts[t.topIndex].y);
-	float leftX = verts[t.topIndex].x + subpixelAdjust(verts[leftIndex].y)*t.;
-	float rightX = verts[t.topIndex].x + glm::fract(verts[rightIndex].y)*rightStep;
-	bool leftEdgeIsShort = leftDelta.y < rightDelta.y;
-	float leftStep = leftDelta.x / leftDelta.y;
-	float rightStep = rightDelta.x / rightDelta.y;
-	
-	float shortStep = leftEdgeIsShort ? leftStep : rightStep;
-	float longStep = leftEdgeIsShort ? rightStep : leftStep;
-
-	int shortSteps = leftEdgeIsShort ? ceil(leftDelta.y) : ceil(rightDelta.y);
-	int longSteps = leftEdgeIsShort ? ceil(rightDelta.y) : ceil(leftDelta.y);
-
-	int y = ceil(verts[leftIndex].y);
-	
-	if (y < 0) {
-		int offset = abs(y);
-		if (offset < longSteps) {
-			return;	// invisible
-		}
-		y -= offset;
-		longSteps -= offset;
-		if (y < 0) {
-			// short edge is not visible
-			offset = abs(y);
-
-			leftStep = leftDelta.x / leftDelta.y;
-			edgeLoop(longSteps, 0, leftX, rightX, leftStep, rightStep);
-		}
-		leftX += offset*leftStep;
-		rightX += offset*rightStep;
-	}
-	shortSteps = std::min((unsigned int)shortSteps, _height-y);
-	
-	std::tie(leftX, rightX) = edgeLoop(shortSteps, y, leftX, rightX, leftStep, rightStep);
-	y += shortSteps;
-	longSteps -= shortSteps;
-	if (y >= _height || longSteps <= 0) {
-		return;
-	}
-
-	longSteps = std::min((unsigned int)longSteps, _height-y);
-	
-	if (leftEdgeIsShort) {
-		leftDelta = verts[nextIndex(rightIndex)] - verts[previousIndex(leftIndex)];
-		leftStep = leftDelta.x / leftDelta.y;
-	} else {
-		rightDelta = verts[previousIndex(leftIndex)] - verts[nextIndex(rightIndex)];
-		rightStep = rightDelta.x / rightDelta.y;
-	}
-	edgeLoop(longSteps, y, leftX, rightX, leftStep, rightStep);*/
+	float y = verts[t.topIndex].y;
+	float leftOffset = t.leftSideIsC ? fract(y)*t.stepOnC : fract(y)*t.stepOnA;
+	float rightOffset = t.leftSideIsC ? fract(y)*t.stepOnA : fract(y)*t.stepOnC;
+	edgeLoop(t.heightOfA, floor(y),  verts[t.topIndex].x + leftOffset,  verts[t.topIndex].x + rightOffset, t.leftSideIsC ? t.stepOnC : t.stepOnA, t.leftSideIsC ? t.stepOnA : t.stepOnC, color);
+	y = verts[t.midIndex].y;
+	float xOnC = verts[t.topIndex].x + (t.stepOnC * t.heightOfA) + fract(y)*t.stepOnC;
+	float leftX = t.leftSideIsC ? xOnC : verts[t.midIndex].x + fract(y)*t.stepOnB;
+	float rightX = t.leftSideIsC ? verts[t.midIndex].x + fract(y)*t.stepOnB: xOnC;
+	edgeLoop(t.heightOfB, floor(y), leftX, rightX, t.leftSideIsC ? t.stepOnC : t.stepOnB, t.leftSideIsC ? t.stepOnB : t.stepOnC, color);
 }
 
-void Renderer::drawSpan(int leftX, int rightX, int y) {
-	assert(y >= 0 && y < _height);
+void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
+	if (leftX > rightX) {
+		std::swap(leftX, rightX);
+	}
+	if (y < 0 || y >= _height) {
+		return;
+	}
 	while (leftX++ <= rightX) {
-		_buffer.setPixel({255,255,255,255}, leftX, y);
+		_buffer.setPixel(color, leftX, y);
 	}
 }
 
-std::tuple<float, float> Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep) {
+void Renderer::edgeLoop(int numberOfSteps, int y, float leftX, float rightX, float leftStep, float rightStep, const Pixel& color) {
 	assert(numberOfSteps >= 0);
 
+	int yPos = y;
 	while (numberOfSteps--) {
 		int left = ceil(leftX);
 		int right = ceil(rightX);
-		drawSpan(std::min(left, right), std::max(left, right), y++);
+		drawSpan(left, right, yPos--, color);
 		leftX += leftStep;
 		rightX += rightStep;
 	}
-	return std::make_tuple(leftX, rightX);
 }
 
-
-
 bool Renderer::isTrianglePotentialVisible(const glm::vec2 (&verts)[3], const triangle& t) const {
-	if (verts[t.rightIndex].x < 0 ||
-		verts[t.bottomIndex].y < 0 ||
+	if (verts[t.rightIndex].x < _x ||
+		verts[t.bottomIndex].y < _y ||
 		verts[t.leftIndex].x >= _width ||
 		verts[t.topIndex].y >= _height) {
 		return false;

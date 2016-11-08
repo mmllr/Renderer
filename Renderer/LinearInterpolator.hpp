@@ -12,7 +12,7 @@ namespace renderlib {
 			_startValue = startValue + relation*offset;
 			_step = 1.f / std::max(fabs(deltaA), fabs(deltaB));
 			_delta = std::min(deltaA, deltaB);
-			_numberOfSteps = ceil(std::max(fabs(deltaA), fabs(deltaB)));
+			_numberOfSteps = floor(std::max(fabs(deltaA), fabs(deltaB)));
 		}
 		float t(void) const { return _value; }
 		float interpolatedValue(void) const { return _startValue + _delta*t(); }

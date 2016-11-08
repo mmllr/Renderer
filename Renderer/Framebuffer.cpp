@@ -12,7 +12,7 @@ void Framebuffer::setPixel(const Pixel& pixel, size_t x, size_t y) {
 	if (x >= _width || y >= _height) {
 		return;
 	}
-	_pixels[x+y*getWidth()] = pixel;
+	_pixels[x+(_height-1-y)*getWidth()] = pixel;
 }
 
 void Framebuffer::resize(size_t width, size_t height) {

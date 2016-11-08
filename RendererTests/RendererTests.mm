@@ -1,6 +1,7 @@
 
 #import <XCTest/XCTest.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <tuple>
 #include <vector>
 #include "renderlib.hpp"
@@ -197,7 +198,7 @@ using namespace std;
 
 - (void)testIndexCategorizationWithLeftAndRightOnTop {
 	glm::vec2 verts[] = {
-		{10, 10}, {200, 10}, {100, 130}
+		{50, 10}, {100, 10}, {150, 120}
 	};
 	
 	triangle t = triangleFromVerts(verts);
@@ -215,46 +216,6 @@ using namespace std;
 	XCTAssertEqual(expectedDeltaB, t.deltaB);
 	XCTAssertEqualWithAccuracy(expectedDeltaC.x / expectedDeltaC.y, t.stepOnC, .0001);
 	XCTAssertEqualWithAccuracy(expectedDeltaB.x / expectedDeltaB.y, t.stepOnB, .0001);
-}
-
-struct clipped_triangle {
-	int y;
-	int count;
-	float leftX, rightX, leftStep, rightStep;
-};
-
-vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsigned int width, unsigned int height) {
-	vector<clipped_triangle> v;
-
-	triangle t = triangleFromVerts(verts);
-
-	if (verts[t.midIndex].y < 0) {
-		int offset = abs(verts[t.midIndex].y);
-		int count = t.deltaB.y - offset;
-		float leftX = verts[t.midIndex].x + t.stepOnB*offset;
-		float rightX = verts[t.topIndex].x + t.stepOnC*(offset+t.deltaA.y);
-		return {{0, count, leftX, rightX, t.stepOnB, t.stepOnC }};
-	}
-	int y = std::ceil(verts[t.topIndex].y);
-	int count = t.deltaA.y;
-	float leftX = verts[t.topIndex].x;
-	float rightX = verts[t.topIndex].x;
-	if (verts[t.midIndex].y >= height) {
-		count = height-y;
-		return {{y, count, leftX, rightX, t.stepOnA, t.stepOnC }};
-	}
-	if (y < 0) {
-		int offset = abs(y);
-		y += offset;
-		count -= offset;
-		leftX += t.stepOnA*offset;
-		rightX += t.stepOnC*offset;
-	}
-	clipped_triangle top = {y, count, leftX, rightX, t.stepOnA, t.stepOnC };
-	v.push_back(top);
-	clipped_triangle bottom = {static_cast<int>(ceil(verts[t.midIndex].y)), static_cast<int>(std::min(t.deltaB.y, height-verts[t.midIndex].y)), verts[t.midIndex].x, verts[t.topIndex].x + t.deltaA.y*(t.deltaA.x/t.deltaC.x), t.stepOnB, t.stepOnC };
-	v.push_back(bottom);
-	return v;
 }
 
 - (void)testClipTriangleWhichIsCompletlyVisible {
@@ -387,5 +348,85 @@ vector<clipped_triangle> clipTriangleToBounds(const glm::vec2 (&verts)[3], unsig
 	XCTAssertEqualWithAccuracy(v[0].leftStep, expectedAStep, .0001);
 	XCTAssertEqualWithAccuracy(v[0].rightStep, expectedCStep, .0001);
 }
+
+- (void)testClipTriangleWhichIsCompletlyVisibleWithTopAndMidVertexOnTopEdge {
+	glm::vec2 verts[] = {
+		{50, 10}, {100, 10}, {150, 120}
+	};
+	vec2 expectedDeltaC = verts[2]-verts[1];
+	vec2 expectedDeltaA = verts[2]-verts[0];
+	
+	float expectedAStep = expectedDeltaA.x / expectedDeltaA.y;
+	float expectedCStep = expectedDeltaC.x / expectedDeltaC.y;
+	
+	std::vector<clipped_triangle> v = clipTriangleToBounds(verts, 200, 200);
+	XCTAssertEqual(v.size(), 1);
+	XCTAssertEqual(v[0].y, 10);
+	XCTAssertEqual(v[0].count, 110);
+	XCTAssertEqualWithAccuracy(v[0].leftX, 50, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightX, 100, .0001);
+	XCTAssertEqualWithAccuracy(v[0].leftStep, expectedAStep, .0001);
+	XCTAssertEqualWithAccuracy(v[0].rightStep, expectedCStep, .0001);
+}
+
+glm::mat4 adjoint(const glm::mat4& m) {
+	mat4 a;
+	float d = glm::determinant(m);
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			a[i][j] = pow(-1, (i)+(j))*d*m[i][j];
+		}
+	}
+	return a;
+}
+
+- (void)testTransposeMatrix {
+	glm::mat4 m = glm::rotate(mat4(), glm::radians(30.f), {0.f,1.f, 0.f});
+	
+	glm::mat4 n = transpose(inverse(m));
+	mat4 a = adjoint(m);
+	XCTAssertEqual(a, n);
+}
+
+
+
+vector<vec4> givenClippedVerts(const vector<vec4>& verts, const mat4& m) {
+	vector<vec4> newVerts;
+	for (auto&& v : verts) {
+		newVerts.push_back(m*v);
+	}
+	return newVerts;
+}
+
+- (void)testClipPolygonWhichIsInsideViewFrustum {
+	vector<vec4> verts = givenClippedVerts({
+		{-.25f, .25f, -1, 1},
+		{.25f, .25f, -1, 1},
+		{0.f, -.25f, -1, 1}
+	}, glm::perspective(glm::radians(60.0f), 4.f/3.f, 1.f, 100.f));
+
+	vector<vec4> clipped = clipTriangleToFrustum(verts);
+	XCTAssertEqual(clipped, verts);
+	
+	/*
+	vec3 left = {-1,0,0};
+	float d0 = dot(vec3(clipped[0]), left);
+	float d1 = dot(vec3(clipped[1]), left);
+	float a = d0 / (d0-d1);
+	vec4 newPoint = (1.f-a) * clipped[0] + a * clipped[1];*/
+}
+
+- (void)testClippingAPolygoneWhichIsOutsideTheViewFrustum {
+	vector<vec4> verts = givenClippedVerts({
+		{-1.25f, .25f, -1, 1},
+		{.25f, 1.25f, -1, 1},
+		{0.f, -1.25f, -1, 1}
+	},glm::perspective(glm::radians(60.0f), 4.f/3.f, 1.f, 100.f));
+	
+	vector<vec4> clipped = clipTriangleToFrustum(verts);
+
+	XCTAssertEqual(clipped, vector<vec4>({}));
+}
+
 
 @end
