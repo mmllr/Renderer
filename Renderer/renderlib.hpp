@@ -153,6 +153,10 @@ namespace renderlib {
 		return a / (a-b);
 	}
 	
+	inline Vertex clipVertex(const Vertex& start, const Vertex& end, float a) {
+		return {start.position*(1.f-a) + end.position*a, start.color*(1.f-a) + end.color*a};
+	}
+	
 	inline Vertex intersectVertex(const Vertex& v0, const Vertex& v1, ClipPlane plane) {
 		float a;
 		const glm::vec4 & p0 = v0.position;
@@ -177,7 +181,7 @@ namespace renderlib {
 				a = interpolationFactor(p0.w - p0.z, p1.w - p1.z);
 				break;
 		};
-		return {{(1.f-a) * p0 + a * p1}, {(1.f-a)*v0.color + a * v1.color}};
+		return clipVertex(v0, v1, a);
 	}
 	
 	inline std::vector<Vertex> clipPolygonToPlane(const std::vector<Vertex>& verts, ClipPlane plane) {

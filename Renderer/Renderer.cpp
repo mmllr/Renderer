@@ -155,8 +155,7 @@ void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
 		edgeLoop(verts[t.topIndex], verts[t.midIndex], verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfC);
 		return;
 	}
-	float a = ((float)t.heightOfA)/t.heightOfC;
-	Vertex vOnC = {verts[t.topIndex].position*(1.f-a) + verts[t.bottomIndex].position*a, verts[t.topIndex].color*(1.f-a) + verts[t.bottomIndex].color*a};
+	Vertex vOnC = clipVertex(verts[t.topIndex], verts[t.bottomIndex], ((float)t.heightOfA)/t.heightOfC);
 	edgeLoop(verts[t.topIndex], verts[t.topIndex], t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, t.heightOfA);
 	edgeLoop(t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfB);
 }
@@ -175,7 +174,7 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	for (int i = 0; i < width; ++i) {
 		float a = ((float)i)/width;
 		if (_pixelShader != nullptr) {
-			Vertex fragment = {(1-a)*drawLeft.position + drawRight.position*a, (1-a)*drawLeft.color + drawRight.color*a};
+			Vertex fragment = clipVertex(drawLeft, drawRight, a);
 			fragment.color /= fragment.position.w;
 			vec4 color = _pixelShader(fragment);
 			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
@@ -186,8 +185,6 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps) {
 	for (int i = 0; i < numSteps; ++i) {
 		float a = ((float)i)/numSteps;
-		Vertex left = {(1.f-a)*leftStart.position + a*leftDest.position, (1.f-a)*leftStart.color + a*leftDest.color};
-		Vertex right = {(1.f-a)*rightStart.position + a*rightDest.position, (1.f-a)*rightStart.color + a*rightDest.color};
-		drawSpan(left, right, leftStart.position.y - i);
+		drawSpan(clipVertex(leftStart, leftDest, a), clipVertex(rightStart, rightDest, a), leftStart.position.y - i);
 	}
 }
