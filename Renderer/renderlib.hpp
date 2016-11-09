@@ -22,17 +22,11 @@ namespace renderlib {
 		unsigned int topIndex;
 		unsigned int bottomIndex;
 		unsigned int midIndex;
-		float deltaA;
-		float deltaB;
-		float deltaC;
 		int heightOfA;
 		int heightOfB;
 		int heightOfC;
 		bool leftSideIsC;
 		bool leftAndRightOnTop;
-		float stepOnC;
-		float stepOnA;
-		float stepOnB;
 	};
 	
 
@@ -90,15 +84,9 @@ namespace renderlib {
 		glm::vec4 a = t.leftAndRightOnTop ? verts[t.bottomIndex].position - verts[nextIndexInTriangle(t.topIndex)].position : verts[t.midIndex].position - verts[t.topIndex].position;
 		glm::vec4 b = verts[t.bottomIndex].position - verts[t.midIndex].position;
 
-		t.deltaA = a.x;
-		t.deltaB = b.x;
-		t.deltaC = c.x;
 		t.heightOfA = ceil(fabs(a.y));
 		t.heightOfB = ceil(fabs(b.y));
 		t.heightOfC = ceil(fabs(c.y));
-		t.stepOnC = t.deltaC / t.heightOfC;
-		t.stepOnA = t.deltaA / t.heightOfA;
-		t.stepOnB = t.deltaB / t.heightOfB;
 		return t;
 	}
 	

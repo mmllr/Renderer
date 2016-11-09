@@ -2,6 +2,7 @@
 #include <vector>
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/color_space.hpp>
 
 using namespace renderlib;
 using namespace std;
@@ -11,8 +12,12 @@ Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex) {
 	return {mvp * vertex.position, vertex.color};
 }
 
-Pixel basicPixelShader(const Vertex& fragment) {
-	return {static_cast<uint8_t>(255*fragment.color.r), static_cast<uint8_t>(255*fragment.color.g), static_cast<uint8_t>(255*fragment.color.b), 255};
+vec4 basicPixelShader(const Vertex& fragment) {
+	return fragment.color;
+}
+
+vec4 desaturationPixelShader(const Vertex& fragment) {
+	return {glm::saturation(.0f, vec3(fragment.color)), 1};
 }
 
 void renderScene01(renderlib::Renderer& renderer) {

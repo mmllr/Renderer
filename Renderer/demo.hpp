@@ -9,6 +9,7 @@ using namespace renderlib;
 
 void renderScene01(renderlib::Renderer& render);
 Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex);
-Pixel basicPixelShader(const Vertex& fragment); 
+vec4 basicPixelShader(const Vertex& fragment);
+vec4 desaturationPixelShader(const Vertex& fragment);
 
 #endif /* demo_hpp */

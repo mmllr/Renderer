@@ -47,7 +47,7 @@ void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vert
 	_vertexShader = vertexShader;
 }
 
-void Renderer::setPixelShader(std::function<Pixel (const Vertex& fragment)> pixelShader) {
+void Renderer::setPixelShader(std::function<vec4 (const Vertex& fragment)> pixelShader) {
 	_pixelShader = pixelShader;
 }
 
@@ -104,7 +104,7 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 			float oneOverW = 1./clippedPoly[p].position.w;
 			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
 			_ndcVertexes[p].position.w = oneOverW;
-			_ndcVertexes[p].color = clippedPoly[p].color;
+			_ndcVertexes[p].color = clippedPoly[p].color*oneOverW;
 		}
 
 		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
@@ -161,11 +161,6 @@ void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
 	edgeLoop(t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfB);
 }
 
-void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
-	//assert(leftX <= rightX);
-
-}
-
 void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	Vertex drawLeft(left);
 	Vertex drawRight(right);
@@ -180,7 +175,10 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	for (int i = 0; i < width; ++i) {
 		float a = ((float)i)/width;
 		if (_pixelShader != nullptr) {
-			_buffer.setPixel(_pixelShader({(1-a)*drawLeft.position + drawRight.position*a, (1-a)*drawLeft.color + drawRight.color*a}), startX+i, floor(y));
+			Vertex fragment = {(1-a)*drawLeft.position + drawRight.position*a, (1-a)*drawLeft.color + drawRight.color*a};
+			fragment.color /= fragment.position.w;
+			vec4 color = _pixelShader(fragment);
+			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
 		}
 	}
 }
