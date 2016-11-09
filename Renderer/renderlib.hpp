@@ -14,6 +14,7 @@ namespace renderlib {
 	struct Vertex {
 		glm::vec4 position;
 		glm::vec4 color;
+		glm::vec2 texCoords;
 	};
 	
 	struct triangle {
@@ -154,7 +155,7 @@ namespace renderlib {
 	}
 	
 	inline Vertex clipVertex(const Vertex& start, const Vertex& end, float a) {
-		return {start.position*(1.f-a) + end.position*a, start.color*(1.f-a) + end.color*a};
+		return {start.position*(1.f-a) + end.position*a, start.color*(1.f-a) + end.color*a, start.texCoords*(1.f-a) + end.texCoords*a};
 	}
 	
 	inline Vertex intersectVertex(const Vertex& v0, const Vertex& v1, ClipPlane plane) {

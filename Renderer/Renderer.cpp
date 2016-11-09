@@ -47,7 +47,7 @@ void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vert
 	_vertexShader = vertexShader;
 }
 
-void Renderer::setPixelShader(std::function<vec4 (const Vertex& fragment)> pixelShader) {
+void Renderer::setPixelShader(std::function<vec4 (const Vertex& fragment, const Sampler& sampler)> pixelShader) {
 	_pixelShader = pixelShader;
 }
 
@@ -67,6 +67,10 @@ void Renderer::setModelView(const glm::mat4& modelView) {
 
 void Renderer::setProjection(const glm::mat4& projection) {
 	_projection = projection;
+}
+
+void Renderer::setTexture(const Texture& texture) {
+	_texture = texture;
 }
 
 void Renderer::render(void) {
@@ -105,15 +109,19 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
 			_ndcVertexes[p].position.w = oneOverW;
 			_ndcVertexes[p].color = clippedPoly[p].color*oneOverW;
+			_ndcVertexes[p].texCoords = clippedPoly[p].texCoords;
 		}
 
 		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
 		verts[0].color = _ndcVertexes[0].color;
+		verts[0].texCoords = _ndcVertexes[0].texCoords;
 		for (int p = 1; p < clippedPoly.size()-1; ++p) {
 			verts[1].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p].position, _x, _y, _width, _height, _nearZ, _farZ);
 			verts[1].color = _ndcVertexes[p].color;
+			verts[1].texCoords = _ndcVertexes[p].texCoords;
 			verts[2].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p+1].position, _x, _y, _width, _height, _nearZ, _farZ);
 			verts[2].color = _ndcVertexes[p+1].color;
+			verts[2].texCoords = _ndcVertexes[p+1].texCoords;
 			rasterizeTriangle(verts, colors[1]);
 		}
 	}
@@ -176,7 +184,7 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 		if (_pixelShader != nullptr) {
 			Vertex fragment = clipVertex(drawLeft, drawRight, a);
 			fragment.color /= fragment.position.w;
-			vec4 color = _pixelShader(fragment);
+			vec4 color = _pixelShader(fragment, Sampler(_texture));
 			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
 		}
 	}

@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include "Framebuffer.hpp"
 #include "renderlib.hpp"
+#include "Texture.hpp"
+#include "Sampler.hpp"
 
 using namespace std;
 using namespace glm;
@@ -18,7 +20,7 @@ namespace renderlib {
 		void setClearColor(const Pixel& clearColor);
 		void setRenderFunc(std::function<void (Renderer&)> handler);
 		void setVertexShader(std::function<Vertex (const mat4& mvp, const Vertex& vertex)> vertexShader);
-		void setPixelShader(std::function<vec4 (const Vertex& fragment)> pixelShader);
+		void setPixelShader(std::function<vec4 (const Vertex& fragment, const Sampler& sampler)> pixelShader);
 		void render(void);
 		const Framebuffer& frameBuffer(void) const;
 		void setViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
@@ -28,6 +30,7 @@ namespace renderlib {
 		void drawTriangles(uint32_t firstVertexIndex, uint32_t count);
 		void setModelView(const glm::mat4& modelView);
 		void setProjection(const glm::mat4& projection);
+		void setTexture(const Texture& t);
 	private:
 		vector<Vertex> transformAndClipTriangle(int startIndex);
 		void rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color);
@@ -42,13 +45,14 @@ namespace renderlib {
 		Framebuffer _buffer;
 		std::function<void (Renderer&)> _renderFunction;
 		std::function<Vertex (const mat4& mvp, const Vertex& vertex)> _vertexShader;
-		std::function<vec4 (const Vertex& fragment)> _pixelShader;
+		std::function<vec4 (const Vertex& fragment, const Sampler& sampler)> _pixelShader;
 		vector<Vertex> _vertexBuffer;
 		vector<uint32_t> _indexBuffer;
 		vector<Vertex> _clipVertexes;
 		vector<Vertex> _ndcVertexes;
 		glm::mat4 _modelView;
 		glm::mat4 _projection;
+		Texture _texture;
 	};
 }
 

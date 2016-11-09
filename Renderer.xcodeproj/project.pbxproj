@@ -15,8 +15,10 @@
 		28522BC21DCBA6D100839B04 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 28522BC11DCBA6D100839B04 /* Assets.xcassets */; };
 		28522BC51DCBA6D100839B04 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 28522BC31DCBA6D100839B04 /* MainMenu.xib */; };
 		285EF2AC1DCE846D00AC64C6 /* RendererTests.mm in Sources */ = {isa = PBXBuildFile; fileRef = 285EF2AB1DCE846D00AC64C6 /* RendererTests.mm */; };
+		28797BA81DD35B2C00E5ACD5 /* Sampler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 28797BA61DD35B2C00E5ACD5 /* Sampler.cpp */; };
 		28BA77971DCBA7E4006492FE /* WindowController.mm in Sources */ = {isa = PBXBuildFile; fileRef = 28BA77961DCBA7E4006492FE /* WindowController.mm */; };
 		28BA779C1DCBABA0006492FE /* Framebuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 28BA779A1DCBABA0006492FE /* Framebuffer.cpp */; };
+		28F2366D1DD3529F00EA2866 /* Texture.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 28F2366B1DD3529F00EA2866 /* Texture.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,10 +49,14 @@
 		285EF2A91DCE846D00AC64C6 /* RendererTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RendererTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		285EF2AB1DCE846D00AC64C6 /* RendererTests.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RendererTests.mm; sourceTree = "<group>"; };
 		285EF2AD1DCE846D00AC64C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		28797BA61DD35B2C00E5ACD5 /* Sampler.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Sampler.cpp; sourceTree = "<group>"; };
+		28797BA71DD35B2C00E5ACD5 /* Sampler.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Sampler.hpp; sourceTree = "<group>"; };
 		28BA77951DCBA7E4006492FE /* WindowController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WindowController.h; sourceTree = "<group>"; };
 		28BA77961DCBA7E4006492FE /* WindowController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = WindowController.mm; sourceTree = "<group>"; };
 		28BA779A1DCBABA0006492FE /* Framebuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Framebuffer.cpp; sourceTree = "<group>"; };
 		28BA779B1DCBABA0006492FE /* Framebuffer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Framebuffer.hpp; sourceTree = "<group>"; };
+		28F2366B1DD3529F00EA2866 /* Texture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Texture.cpp; sourceTree = "<group>"; };
+		28F2366C1DD3529F00EA2866 /* Texture.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Texture.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +115,10 @@
 				280B81C91DCC9AAA001BA6C9 /* renderlib.hpp */,
 				280B81CD1DCCA5DB001BA6C9 /* demo.cpp */,
 				280B81CE1DCCA5DB001BA6C9 /* demo.hpp */,
+				28F2366B1DD3529F00EA2866 /* Texture.cpp */,
+				28F2366C1DD3529F00EA2866 /* Texture.hpp */,
+				28797BA61DD35B2C00E5ACD5 /* Sampler.cpp */,
+				28797BA71DD35B2C00E5ACD5 /* Sampler.hpp */,
 			);
 			path = Renderer;
 			sourceTree = "<group>";
@@ -238,6 +248,8 @@
 				28BA77971DCBA7E4006492FE /* WindowController.mm in Sources */,
 				28BA779C1DCBABA0006492FE /* Framebuffer.cpp in Sources */,
 				280B81C81DCC9A0E001BA6C9 /* LinearInterpolator.cpp in Sources */,
+				28797BA81DD35B2C00E5ACD5 /* Sampler.cpp in Sources */,
+				28F2366D1DD3529F00EA2866 /* Texture.cpp in Sources */,
 				280B81CF1DCCA5DB001BA6C9 /* demo.cpp in Sources */,
 				28522BBD1DCBA6D100839B04 /* AppDelegate.m in Sources */,
 			);
@@ -446,6 +458,7 @@
 				285EF2B11DCE846D00AC64C6 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
