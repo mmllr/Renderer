@@ -40,7 +40,7 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	NSRect rect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
 	_renderer = new Renderer(rect.size.width, rect.size.height);
 	_renderer->setVertexShader(basicVertexShader);
-	_renderer->setPixelShader(basicPixelShader);
+	_renderer->setPixelShader(texturedPixelShader);
 	_renderer->setRenderFunc(renderScene01);
 	_renderer->setTexture([self loadTexture]);
 
@@ -55,13 +55,16 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	NSDataAsset *asset = [[NSDataAsset alloc] initWithName:@"Texture"];
 	NSBitmapImageRep *img = [[NSBitmapImageRep alloc] initWithData:asset.data];
 	
-	int w = img.size.width;
-	int h = img.size.height;
+	int w = (int)img.pixelsWide;
+	int h = (int)img.pixelsHigh;
 	std::vector<Pixel> pixels;
-	for (int i = 0; i < w*h; ++i) {
-		NSUInteger pixel[4];
-		[img getPixel:pixel atX:i % w y:i / w];
-		pixels.push_back({static_cast<uint8_t>(pixel[0]), static_cast<uint8_t>(pixel[1]), static_cast<uint8_t>(pixel[2]), 255});
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			NSUInteger pixel[4];
+			[img getPixel:pixel atX:x y:y];
+			pixels.push_back({static_cast<uint8_t>(pixel[0]), static_cast<uint8_t>(pixel[1]), static_cast<uint8_t>(pixel[2]), 255});
+		}
+		
 	}
 	return Texture(pixels, w, h);
 }
@@ -80,5 +83,27 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 		CGImageRelease(image);
 	}
 }
+
+- (IBAction)enablePerspectiveCorrection:(id)sender {
+	_renderer->enablePerspectiveCorrection();
+}
+
+- (IBAction)disablePerspectiveCorrection:(id)sender {
+	_renderer->diablePerspectiveCorrection();
+}
+
+- (IBAction)switchRenderMode:(id)sender {
+	std::vector<std::function<vec4 (const Vertex& fragment, const Sampler& sampler)>> shaders = {
+		basicPixelShader,
+		colorPixelShader,
+		texturedPixelShader,
+		textureColorPixelShader
+	};
+	
+	if ([sender tag] < shaders.size()) {
+		_renderer->setPixelShader(shaders[[sender tag]]);
+	}
+}
+
 
 @end

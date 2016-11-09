@@ -613,29 +613,48 @@
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="View" id="HyV-fh-RgO">
                         <items>
-                            <menuItem title="Show Toolbar" keyEquivalent="t" id="snW-S8-Cw5">
-                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
-                                <connections>
-                                    <action selector="toggleToolbarShown:" target="-1" id="BXY-wc-z0C"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Customize Toolbar…" id="1UK-8n-QPP">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="runToolbarCustomizationPalette:" target="-1" id="pQI-g3-MTW"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem isSeparatorItem="YES" id="hB3-LF-h0Y"/>
-                            <menuItem title="Show Sidebar" keyEquivalent="s" id="kIP-vf-haE">
-                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
-                                <connections>
-                                    <action selector="toggleSourceList:" target="-1" id="iwa-gc-5KM"/>
-                                </connections>
-                            </menuItem>
                             <menuItem title="Enter Full Screen" keyEquivalent="f" id="4J7-dP-txa">
                                 <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
                                 <connections>
                                     <action selector="toggleFullScreen:" target="-1" id="dU3-MA-1Rq"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="4om-Lj-Pri"/>
+                            <menuItem title="Enable perspective correction" id="cTb-pR-arC">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="enablePerspectiveCorrection:" target="-1" id="4tG-3z-6Nt"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Disable perspective correction" id="lEi-wZ-0iK">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="disablePerspectiveCorrection:" target="-1" id="9lL-bu-erJ"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem isSeparatorItem="YES" id="bgL-0k-HtY"/>
+                            <menuItem title="Flat color shading" id="WEn-BV-Ebo">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="switchRenderMode:" target="-1" id="lYb-xq-d0E"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Gouraud shading" tag="1" id="XQP-7R-BkL">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="switchRenderMode:" target="-1" id="Uai-WL-EXU"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Textured" tag="2" id="xrt-Kn-X4T">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="switchRenderMode:" target="-1" id="9ur-di-fUl"/>
+                                </connections>
+                            </menuItem>
+                            <menuItem title="Textured and colored" tag="3" id="Ust-ax-KfK">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="switchRenderMode:" target="-1" id="Bs4-GA-Xvm"/>
                                 </connections>
                             </menuItem>
                         </items>

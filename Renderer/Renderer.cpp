@@ -13,7 +13,7 @@ using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _projection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f)) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _projection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f)), _shouldPerformPerspectiveCorrection(true) {
 	
 }
 
@@ -73,6 +73,14 @@ void Renderer::setTexture(const Texture& texture) {
 	_texture = texture;
 }
 
+void Renderer::enablePerspectiveCorrection(void) {
+	_shouldPerformPerspectiveCorrection = true;
+}
+
+void Renderer::diablePerspectiveCorrection(void) {
+	_shouldPerformPerspectiveCorrection = false;
+}
+
 void Renderer::render(void) {
 	_buffer.fill(_clearColor);
 	if (_renderFunction) {
@@ -95,23 +103,25 @@ vector<Vertex> Renderer::transformAndClipTriangle(int startIndex) {
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 	Vertex verts[3];
-	Pixel colors[] = {{255, 255, 255, 255}, {255, 0, 0, 255}};
 	
 	for (unsigned int i = 0; i < count*3; i += 3) {
+		// transforming to clip space
 		vector<Vertex> clippedPoly = transformAndClipTriangle(firstVertexIndex+i);
 		
 		if (clippedPoly.size() < 3) {
 			continue;
 		}
+		// perspective projection
 		_ndcVertexes.resize(clippedPoly.size());
 		for (int p = 0; p < clippedPoly.size(); ++p) {
 			float oneOverW = 1./clippedPoly[p].position.w;
 			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
 			_ndcVertexes[p].position.w = oneOverW;
-			_ndcVertexes[p].color = clippedPoly[p].color*oneOverW;
-			_ndcVertexes[p].texCoords = clippedPoly[p].texCoords;
+			_ndcVertexes[p].color = _shouldPerformPerspectiveCorrection ? clippedPoly[p].color*oneOverW : clippedPoly[p].color;
+			_ndcVertexes[p].texCoords = _shouldPerformPerspectiveCorrection ? clippedPoly[p].texCoords*oneOverW : clippedPoly[p].texCoords;
 		}
 
+		// transform from normalized device coordinates to window coordiates and render triangle strip after clipping
 		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
 		verts[0].color = _ndcVertexes[0].color;
 		verts[0].texCoords = _ndcVertexes[0].texCoords;
@@ -122,41 +132,12 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 			verts[2].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p+1].position, _x, _y, _width, _height, _nearZ, _farZ);
 			verts[2].color = _ndcVertexes[p+1].color;
 			verts[2].texCoords = _ndcVertexes[p+1].texCoords;
-			rasterizeTriangle(verts, colors[1]);
+			rasterizeTriangle(verts);
 		}
 	}
 }
 
-void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color) {
-	vec2 drawStart(start), drawEnd(end);
-	if (start.y > end.y) {
-		swap(drawStart, drawEnd);
-	}
-	vec2 delta = drawEnd-drawStart;
-	bool interpolateVertically = fabs(delta.x) > fabs(delta.y);
-
-	if (interpolateVertically) {
-		if (drawStart.x > drawEnd.x) {
-			std::swap(drawStart, drawEnd);
-			delta = drawEnd-drawStart;
-		}
-		int linearValue = floor(drawStart.x);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, fract(drawStart.x));
-		
-		do {
-			_buffer.setPixel(color, linearValue++, floor(lerp.interpolatedValue()));
-		} while(lerp.interpolate());
-	}
-	else {
-		int linearValue = floor(drawStart.y);
-		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, fract(drawStart.y));
-		do {
-			_buffer.setPixel(color, floor(lerp.interpolatedValue()), linearValue++);
-		} while(lerp.interpolate());
-	}
-}
-
-void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
+void Renderer::rasterizeTriangle(const Vertex (&verts)[3]) {
 	triangle t = triangleFromVerts(verts);
 	
 	if (t.leftAndRightOnTop) {
@@ -183,7 +164,11 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 		float a = ((float)i)/width;
 		if (_pixelShader != nullptr) {
 			Vertex fragment = clipVertex(drawLeft, drawRight, a);
-			fragment.color /= fragment.position.w;
+			if (_shouldPerformPerspectiveCorrection) {
+				// apply perspective correction (interpolation in screen space is done with texCoords/w and color/w
+				fragment.color /= fragment.position.w;
+				fragment.texCoords /= fragment.position.w;
+			}
 			vec4 color = _pixelShader(fragment, Sampler(_texture));
 			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
 		}
@@ -194,5 +179,35 @@ void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const
 	for (int i = 0; i < numSteps; ++i) {
 		float a = ((float)i)/numSteps;
 		drawSpan(clipVertex(leftStart, leftDest, a), clipVertex(rightStart, rightDest, a), leftStart.position.y - i);
+	}
+}
+
+
+void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color) {
+	vec2 drawStart(start), drawEnd(end);
+	if (start.y > end.y) {
+		swap(drawStart, drawEnd);
+	}
+	vec2 delta = drawEnd-drawStart;
+	bool interpolateVertically = fabs(delta.x) > fabs(delta.y);
+	
+	if (interpolateVertically) {
+		if (drawStart.x > drawEnd.x) {
+			std::swap(drawStart, drawEnd);
+			delta = drawEnd-drawStart;
+		}
+		int linearValue = floor(drawStart.x);
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.y, fract(drawStart.x));
+		
+		do {
+			_buffer.setPixel(color, linearValue++, floor(lerp.interpolatedValue()));
+		} while(lerp.interpolate());
+	}
+	else {
+		int linearValue = floor(drawStart.y);
+		LinearInterpolator lerp(delta.x, delta.y, drawStart.x, fract(drawStart.y));
+		do {
+			_buffer.setPixel(color, floor(lerp.interpolatedValue()), linearValue++);
+		} while(lerp.interpolate());
 	}
 }

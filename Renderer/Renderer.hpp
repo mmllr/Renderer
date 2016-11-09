@@ -31,10 +31,12 @@ namespace renderlib {
 		void setModelView(const glm::mat4& modelView);
 		void setProjection(const glm::mat4& projection);
 		void setTexture(const Texture& t);
+		void enablePerspectiveCorrection(void);
+		void diablePerspectiveCorrection(void);
 	private:
 		vector<Vertex> transformAndClipTriangle(int startIndex);
 		void rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color);
-		void rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color);
+		void rasterizeTriangle(const Vertex (&verts)[3]);
 		void edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps);
 		std::tuple<unsigned int, unsigned int, unsigned int, unsigned int> categorizedIndices(const Vertex (&verts)[3]) const;
 		void drawSpan(int leftX, int rightX, int y, const Pixel& color);
@@ -53,6 +55,7 @@ namespace renderlib {
 		glm::mat4 _modelView;
 		glm::mat4 _projection;
 		Texture _texture;
+		bool _shouldPerformPerspectiveCorrection;
 	};
 }
 

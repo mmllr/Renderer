@@ -1,5 +1,7 @@
 #include "Texture.hpp"
 
+#include <iostream>
+
 using namespace renderlib;
 using namespace std;
 
