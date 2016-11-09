@@ -47,7 +47,7 @@ void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vert
 	_vertexShader = vertexShader;
 }
 
-void Renderer::setPixelShader(std::function<Pixel (const vec4& fragCoord)> pixelShader) {
+void Renderer::setPixelShader(std::function<Pixel (const Vertex& fragment)> pixelShader) {
 	_pixelShader = pixelShader;
 }
 
@@ -104,13 +104,16 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 			float oneOverW = 1./clippedPoly[p].position.w;
 			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
 			_ndcVertexes[p].position.w = oneOverW;
+			_ndcVertexes[p].color = clippedPoly[p].color;
 		}
 
 		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
+		verts[0].color = _ndcVertexes[0].color;
 		for (int p = 1; p < clippedPoly.size()-1; ++p) {
 			verts[1].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p].position, _x, _y, _width, _height, _nearZ, _farZ);
+			verts[1].color = _ndcVertexes[p].color;
 			verts[2].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p+1].position, _x, _y, _width, _height, _nearZ, _farZ);
-			
+			verts[2].color = _ndcVertexes[p+1].color;
 			rasterizeTriangle(verts, colors[1]);
 		}
 	}
@@ -153,35 +156,40 @@ void Renderer::rasterizeTriangle(const Vertex (&verts)[3], const Pixel& color) {
 		return;
 	}
 	float a = ((float)t.heightOfA)/t.heightOfC;
-	Vertex vOnC = {verts[t.topIndex].position*(1.f-a) + verts[t.bottomIndex].position*a, {0.f,0.f,0.f,0.f}};
+	Vertex vOnC = {verts[t.topIndex].position*(1.f-a) + verts[t.bottomIndex].position*a, verts[t.topIndex].color*(1.f-a) + verts[t.bottomIndex].color*a};
 	edgeLoop(verts[t.topIndex], verts[t.topIndex], t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, t.heightOfA);
 	edgeLoop(t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfB);
 }
 
 void Renderer::drawSpan(int leftX, int rightX, int y, const Pixel& color) {
 	//assert(leftX <= rightX);
-	if (leftX > rightX) {
-		std::swap(leftX, rightX);
+
+}
+
+void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
+	Vertex drawLeft(left);
+	Vertex drawRight(right);
+	if (left.position.x > right.position.x) {
+		std::swap(drawLeft, drawRight);
 	}
 	if (y < 0 || y >= _height) {
 		return;
 	}
-	while (leftX++ <= rightX) {
+	int width = ceil(drawRight.position.x) - floor(drawLeft.position.x);
+	int startX = drawLeft.position.x + fract(y);
+	for (int i = 0; i < width; ++i) {
+		float a = ((float)i)/width;
 		if (_pixelShader != nullptr) {
-			_buffer.setPixel(_pixelShader(vec4(leftX, y, 0, 0)), leftX, y);
+			_buffer.setPixel(_pixelShader({(1-a)*drawLeft.position + drawRight.position*a, (1-a)*drawLeft.color + drawRight.color*a}), startX+i, floor(y));
 		}
 	}
-}
-
-void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
-	drawSpan(left.position.x, right.position.x, y, {255, 255, 0, 255});
 }
 
 void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps) {
 	for (int i = 0; i < numSteps; ++i) {
 		float a = ((float)i)/numSteps;
-		Vertex left = {(1.f-a)*leftStart.position + a*leftDest.position};
-		Vertex right = {(1.f-a)*rightStart.position + a*rightDest.position};
+		Vertex left = {(1.f-a)*leftStart.position + a*leftDest.position, (1.f-a)*leftStart.color + a*leftDest.color};
+		Vertex right = {(1.f-a)*rightStart.position + a*rightDest.position, (1.f-a)*rightStart.color + a*rightDest.color};
 		drawSpan(left, right, leftStart.position.y - i);
 	}
 }

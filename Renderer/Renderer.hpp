@@ -18,7 +18,7 @@ namespace renderlib {
 		void setClearColor(const Pixel& clearColor);
 		void setRenderFunc(std::function<void (Renderer&)> handler);
 		void setVertexShader(std::function<Vertex (const mat4& mvp, const Vertex& vertex)> vertexShader);
-		void setPixelShader(std::function<Pixel (const vec4& fragCoord)> pixelShader);
+		void setPixelShader(std::function<Pixel (const Vertex& fragment)> pixelShader);
 		void render(void);
 		const Framebuffer& frameBuffer(void) const;
 		void setViewport(unsigned int x, unsigned int y, unsigned int width, unsigned int height);
@@ -42,7 +42,7 @@ namespace renderlib {
 		Framebuffer _buffer;
 		std::function<void (Renderer&)> _renderFunction;
 		std::function<Vertex (const mat4& mvp, const Vertex& vertex)> _vertexShader;
-		std::function<Pixel (const vec4& fragCoord)> _pixelShader;
+		std::function<Pixel (const Vertex& fragment)> _pixelShader;
 		vector<Vertex> _vertexBuffer;
 		vector<uint32_t> _indexBuffer;
 		vector<Vertex> _clipVertexes;

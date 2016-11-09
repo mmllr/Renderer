@@ -8,11 +8,11 @@ using namespace std;
 using namespace glm;
 
 Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex) {
-	return {mvp * vertex.position};
+	return {mvp * vertex.position, vertex.color};
 }
 
-Pixel basicPixelShader(const vec4& fragCoord) {
-	return {0, 255, 0, 255};
+Pixel basicPixelShader(const Vertex& fragment) {
+	return {static_cast<uint8_t>(255*fragment.color.r), static_cast<uint8_t>(255*fragment.color.g), static_cast<uint8_t>(255*fragment.color.b), 255};
 }
 
 void renderScene01(renderlib::Renderer& renderer) {
