@@ -138,6 +138,13 @@ void Renderer::rasterizeTriangle(const Vertex (&verts)[3]) {
 	edgeLoop(t.leftSideIsC ? vOnC : verts[t.midIndex], t.leftSideIsC ? verts[t.midIndex] : vOnC, verts[t.bottomIndex], verts[t.bottomIndex], t.heightOfB);
 }
 
+void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps) {
+	for (int i = 0; i < numSteps; ++i) {
+		float a = ((float)i)/numSteps;
+		drawSpan(clipVertex(leftStart, leftDest, a), clipVertex(rightStart, rightDest, a), leftStart.position.y - i);
+	}
+}
+
 void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	Vertex drawLeft(left);
 	Vertex drawRight(right);
@@ -161,13 +168,6 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 			vec4 color = _pixelShader(fragment);
 			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
 		}
-	}
-}
-
-void Renderer::edgeLoop(const Vertex& leftStart, const Vertex& rightStart, const Vertex& leftDest, const Vertex&rightDest, int numSteps) {
-	for (int i = 0; i < numSteps; ++i) {
-		float a = ((float)i)/numSteps;
-		drawSpan(clipVertex(leftStart, leftDest, a), clipVertex(rightStart, rightDest, a), leftStart.position.y - i);
 	}
 }
 

@@ -30,6 +30,9 @@ namespace renderlib {
 		bool leftAndRightOnTop;
 	};
 	
+	inline float subpixelAdjust(float x) {
+		return std::ceil(x)-x;
+	}
 
 	inline unsigned int nextIndexInTriangle(unsigned int theIndex) {
 		return theIndex < 2 ? theIndex+1 : 0;
