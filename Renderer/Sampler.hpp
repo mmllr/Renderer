@@ -9,6 +9,8 @@ namespace renderlib {
 		Sampler(const Texture& t);
 		glm::vec4 lookup(const glm::vec2& texCoord) const;
 	private:
+		glm::vec4 pointSample(const glm::vec2 &texCoord) const;
+		glm::vec4 bilinearSample(const glm::vec2& texCoord) const;
 		const Texture& _texture;
 	};
 }

@@ -47,7 +47,7 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 }
 
 - (void)frameBufferViewBoundsChanged:(NSNotification*)notification {
-	NSRect backingRect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
+	NSRect backingRect = self.frameBufferView.bounds;// [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
 	_renderer->setViewport(0, 0, backingRect.size.width, backingRect.size.height);
 	[self updateView];
 }
