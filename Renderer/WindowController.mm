@@ -5,6 +5,7 @@
 #include "demo.hpp"
 #include "Texture.hpp"
 #include <vector>
+#import "ResourceLoader.h"
 
 using namespace renderlib;
 using namespace glm;
@@ -42,31 +43,13 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	_renderer->setVertexShader(basicVertexShader);
 	_renderer->setPixelShader(texturedPixelShader);
 	_renderer->setRenderFunc(renderScene01);
-	_renderer->setTexture([self loadTexture]);
+	_renderer->setTexture(loadTexture());
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(frameBufferViewBoundsChanged:) name:NSViewFrameDidChangeNotification object:self.frameBufferView];
 	[self updateView];
 	[NSTimer scheduledTimerWithTimeInterval:.01 repeats:YES block:^(NSTimer * _Nonnull timer) {
 		[self updateView];
 	}];
-}
-
-- (renderlib::Texture)loadTexture {
-	NSDataAsset *asset = [[NSDataAsset alloc] initWithName:@"Texture"];
-	NSBitmapImageRep *img = [[NSBitmapImageRep alloc] initWithData:asset.data];
-	
-	int w = (int)img.pixelsWide;
-	int h = (int)img.pixelsHigh;
-	std::vector<Pixel> pixels;
-	for (int y = 0; y < h; ++y) {
-		for (int x = 0; x < w; ++x) {
-			NSUInteger pixel[4];
-			[img getPixel:pixel atX:x y:y];
-			pixels.push_back({static_cast<uint8_t>(pixel[0]), static_cast<uint8_t>(pixel[1]), static_cast<uint8_t>(pixel[2]), 255});
-		}
-		
-	}
-	return Texture(pixels, w, h);
 }
 
 - (void)frameBufferViewBoundsChanged:(NSNotification*)notification {

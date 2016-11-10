@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		28097F5B1DD5115E00677433 /* ResourceLoader.mm in Sources */ = {isa = PBXBuildFile; fileRef = 28097F5A1DD5115E00677433 /* ResourceLoader.mm */; };
 		280B81C51DCC9419001BA6C9 /* Renderer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81C31DCC9419001BA6C9 /* Renderer.cpp */; };
 		280B81C81DCC9A0E001BA6C9 /* LinearInterpolator.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81C61DCC9A0E001BA6C9 /* LinearInterpolator.cpp */; };
 		280B81CF1DCCA5DB001BA6C9 /* demo.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 280B81CD1DCCA5DB001BA6C9 /* demo.cpp */; };
@@ -32,6 +33,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		28097F5A1DD5115E00677433 /* ResourceLoader.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ResourceLoader.mm; sourceTree = "<group>"; };
+		28097F5C1DD5117200677433 /* ResourceLoader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ResourceLoader.h; sourceTree = "<group>"; };
 		280B81C31DCC9419001BA6C9 /* Renderer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Renderer.cpp; sourceTree = "<group>"; };
 		280B81C41DCC9419001BA6C9 /* Renderer.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Renderer.hpp; sourceTree = "<group>"; };
 		280B81C61DCC9A0E001BA6C9 /* LinearInterpolator.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LinearInterpolator.cpp; sourceTree = "<group>"; };
@@ -119,6 +122,8 @@
 				28F2366C1DD3529F00EA2866 /* Texture.hpp */,
 				28797BA61DD35B2C00E5ACD5 /* Sampler.cpp */,
 				28797BA71DD35B2C00E5ACD5 /* Sampler.hpp */,
+				28097F5A1DD5115E00677433 /* ResourceLoader.mm */,
+				28097F5C1DD5117200677433 /* ResourceLoader.h */,
 			);
 			path = Renderer;
 			sourceTree = "<group>";
@@ -247,6 +252,7 @@
 				28522BC01DCBA6D100839B04 /* main.m in Sources */,
 				28BA77971DCBA7E4006492FE /* WindowController.mm in Sources */,
 				28BA779C1DCBABA0006492FE /* Framebuffer.cpp in Sources */,
+				28097F5B1DD5115E00677433 /* ResourceLoader.mm in Sources */,
 				280B81C81DCC9A0E001BA6C9 /* LinearInterpolator.cpp in Sources */,
 				28797BA81DD35B2C00E5ACD5 /* Sampler.cpp in Sources */,
 				28F2366D1DD3529F00EA2866 /* Texture.cpp in Sources */,
