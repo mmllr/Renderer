@@ -3,9 +3,6 @@
 #include "Renderer.hpp"
 #include <glm/glm.hpp>
 #include "demo.hpp"
-#include "Texture.hpp"
-#include <vector>
-#import "ResourceLoader.h"
 
 using namespace renderlib;
 using namespace glm;
@@ -40,10 +37,7 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	
 	NSRect rect = [self.frameBufferView convertRectToBacking:self.frameBufferView.bounds];
 	_renderer = new Renderer(rect.size.width, rect.size.height);
-	_renderer->setVertexShader(basicVertexShader);
-	_renderer->setPixelShader(texturedPixelShader);
-	_renderer->setRenderFunc(renderScene01);
-	_renderer->setTexture(loadTexture());
+	_renderer->setRenderFunc(renderSceneTextured);
 
 	[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(frameBufferViewBoundsChanged:) name:NSViewFrameDidChangeNotification object:self.frameBufferView];
 	[self updateView];
@@ -76,17 +70,16 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 }
 
 - (IBAction)switchRenderMode:(id)sender {
-	std::vector<std::function<vec4 (const Vertex& fragment, const Sampler& sampler)>> shaders = {
-		basicPixelShader,
-		colorPixelShader,
-		texturedPixelShader,
-		textureColorPixelShader
+	std::vector<std::function<void (Renderer&)>> renderFunctions = {
+		renderSceneBasic,
+		renderSceneGouraud,
+		renderSceneTextured,
+		renderSceneTexturedAndColor
 	};
 	
-	if ([sender tag] < shaders.size()) {
-		_renderer->setPixelShader(shaders[[sender tag]]);
+	if ([sender tag] <renderFunctions.size()) {
+		_renderer->setRenderFunc(renderFunctions[[sender tag]]);
 	}
 }
-
 
 @end

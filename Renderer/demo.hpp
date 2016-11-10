@@ -7,13 +7,9 @@
 using namespace glm;
 using namespace renderlib;
 
-void renderScene01(renderlib::Renderer& render);
-Vertex basicVertexShader(const mat4& mvp, const Vertex& vertex);
-vec4 basicPixelShader(const Vertex& fragment, const Sampler& sampler);
-vec4 desaturationPixelShader(const Vertex& fragment, const Sampler& sampler);
-vec4 colorPixelShader(const Vertex& fragment, const Sampler& sampler);
-vec4 texturedPixelShader(const Vertex& fragment, const Sampler& sampler);
-vec4 textureColorPixelShader(const Vertex& fragment, const Sampler& sampler);
-
+void renderSceneBasic(renderlib::Renderer& render);
+void renderSceneGouraud(renderlib::Renderer& render);
+void renderSceneTextured(renderlib::Renderer& render);
+void renderSceneTexturedAndColor(renderlib::Renderer& render);
 
 #endif /* demo_hpp */

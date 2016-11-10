@@ -13,7 +13,7 @@ using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _projection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f)), _shouldPerformPerspectiveCorrection(true) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _shouldPerformPerspectiveCorrection(true) {
 	
 }
 
@@ -31,7 +31,6 @@ void Renderer::setViewport(unsigned int x, unsigned int y, unsigned int width, u
 	_width = width;
 	_height = height;
 	_buffer.resize(width, height);
-	setProjection(glm::perspective(glm::radians(60.0f), float(width)/height, 0.1f, 1000.f));
 }
 
 void Renderer::setDepthRange(float nearZ, float farZ) {
@@ -43,11 +42,11 @@ void Renderer::setRenderFunc(std::function<void (Renderer&)> handler) {
 	_renderFunction = handler;
 }
 
-void Renderer::setVertexShader(std::function<Vertex (const mat4& mvp, const Vertex& vertex)> vertexShader) {
+void Renderer::setVertexShader(std::function<Vertex (const Vertex& vertex)> vertexShader) {
 	_vertexShader = vertexShader;
 }
 
-void Renderer::setPixelShader(std::function<vec4 (const Vertex& fragment, const Sampler& sampler)> pixelShader) {
+void Renderer::setPixelShader(std::function<vec4 (const Vertex& fragment)> pixelShader) {
 	_pixelShader = pixelShader;
 }
 
@@ -59,14 +58,6 @@ void Renderer::setVertexBuffer(const vector<Vertex>& vertexBuffer) {
 
 void Renderer::setIndexBuffer(const vector<uint32_t>& indexBuffer) {
 	_indexBuffer = indexBuffer;
-}
-
-void Renderer::setModelView(const glm::mat4& modelView) {
-	_modelView = modelView;
-}
-
-void Renderer::setProjection(const glm::mat4& projection) {
-	_projection = projection;
 }
 
 void Renderer::setTexture(const Texture& texture) {
@@ -89,14 +80,12 @@ void Renderer::render(void) {
 }
 
 vector<Vertex> Renderer::transformAndClipTriangle(int startIndex) {
-	mat4 mvp = _projection*_modelView;
-
 	uint32_t first = _indexBuffer[startIndex];
 	uint32_t second = _indexBuffer[startIndex+1];
 	uint32_t third = _indexBuffer[startIndex+2];
-	_clipVertexes[first] = _vertexShader(mvp, _vertexBuffer[first]);
-	_clipVertexes[second] = _vertexShader(mvp, _vertexBuffer[second]);
-	_clipVertexes[third] = _vertexShader(mvp, _vertexBuffer[third]);
+	_clipVertexes[first] = _vertexShader(_vertexBuffer[first]);
+	_clipVertexes[second] = _vertexShader(_vertexBuffer[second]);
+	_clipVertexes[third] = _vertexShader(_vertexBuffer[third]);
 	
 	return clipTriangleToFrustum({_clipVertexes[first], _clipVertexes[second], _clipVertexes[third]});
 }
@@ -169,7 +158,7 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 				fragment.color /= fragment.position.w;
 				fragment.texCoords /= fragment.position.w;
 			}
-			vec4 color = _pixelShader(fragment, Sampler(_texture));
+			vec4 color = _pixelShader(fragment);
 			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
 		}
 	}
