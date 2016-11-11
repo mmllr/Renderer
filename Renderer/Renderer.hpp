@@ -33,7 +33,10 @@ namespace renderlib {
 		void disablePerspectiveCorrection(void);
 		void enableDepthTesting(void) { _shouldPerformDepthTest = true; }
 		void disableDepthTesting(void) { _shouldPerformDepthTest = false; }
-		float aspectRatio(void) const { return ((float)_width)/_height; };
+		float aspectRatio(void) const { return ((float)_width)/_height; }
+		void enableCulling(void) { _shouldPerformCulling = true; }
+		void disableCulling(void) { _shouldPerformCulling = false; }
+
 	private:
 		bool performDepthTest(int x, int y, float zPosition);
 		vector<Vertex> transformAndClipTriangle(int startIndex);
@@ -58,6 +61,7 @@ namespace renderlib {
 		Texture _texture;
 		bool _shouldPerformPerspectiveCorrection;
 		bool _shouldPerformDepthTest;
+		bool _shouldPerformCulling;
 	};
 }
 

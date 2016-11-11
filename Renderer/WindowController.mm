@@ -82,6 +82,17 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	}
 }
 
+- (IBAction)toggleCulling:(id)sender {
+	if ([sender state] == NSOnState) {
+		_renderer->disableCulling();
+		[sender setState:NSOffState];
+	}
+	else {
+		_renderer->enableCulling();
+		[sender setState:NSOnState];
+	}
+}
+
 - (IBAction)switchRenderMode:(id)sender {
 	std::vector<std::function<void (Renderer&)>> renderFunctions = {
 		renderSceneBasic,

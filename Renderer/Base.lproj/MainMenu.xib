@@ -632,6 +632,12 @@
                                     <action selector="toggleDepthTesting:" target="-1" id="7Sx-sL-qPN"/>
                                 </connections>
                             </menuItem>
+                            <menuItem title="Backface culling" state="on" id="GTj-AL-9oc">
+                                <modifierMask key="keyEquivalentModifierMask"/>
+                                <connections>
+                                    <action selector="toggleCulling:" target="-1" id="qWy-EQ-es3"/>
+                                </connections>
+                            </menuItem>
                             <menuItem isSeparatorItem="YES" id="bgL-0k-HtY"/>
                             <menuItem title="Flat color shading" id="WEn-BV-Ebo">
                                 <modifierMask key="keyEquivalentModifierMask"/>

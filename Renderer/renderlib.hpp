@@ -216,6 +216,15 @@ namespace renderlib {
 		clippedPolygon = clipPolygonToPlane(clippedPolygon, near);
 		return clipPolygonToPlane(clippedPolygon, far);
 	}
+	
+	inline bool cullFace(const glm::vec4& p0, const glm::vec4& p1, const glm::vec4& p2) {
+		float deltaXE1 = p1.x - p0.x;
+		float deltaYE2 = p2.y - p0.y;
+		float deltaYE1 = p1.y - p0.y;
+		float deltaXE2 = p2.x - p0.x;
+		
+		return deltaXE1*deltaYE2 - deltaYE1*deltaXE2 <= 0;
+	}
 
 }
 

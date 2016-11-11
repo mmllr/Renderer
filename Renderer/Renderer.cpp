@@ -13,7 +13,7 @@ using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _depthBuffer(width*height), _clearColor({0, 0, 0, 255}), _shouldPerformPerspectiveCorrection(true), _shouldPerformDepthTest(true) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _depthBuffer(width*height), _clearColor({0, 0, 0, 255}), _shouldPerformPerspectiveCorrection(true), _shouldPerformDepthTest(true), _shouldPerformCulling(true) {
 	
 }
 
@@ -93,8 +93,6 @@ vector<Vertex> Renderer::transformAndClipTriangle(int startIndex) {
 }
 
 void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
-	Vertex verts[3];
-	
 	for (unsigned int i = 0; i < count*3; i += 3) {
 		// transforming to clip space
 		vector<Vertex> clippedPoly = transformAndClipTriangle(firstVertexIndex+i);
@@ -102,28 +100,22 @@ void Renderer::drawTriangles(uint32_t firstVertexIndex, uint32_t count) {
 		if (clippedPoly.size() < 3) {
 			continue;
 		}
-		// perspective projection
+		// perspective projection &
+		// transform from normalized device coordinates to window coordiates and render triangle strip after clipping
 		_ndcVertexes.resize(clippedPoly.size());
 		for (int p = 0; p < clippedPoly.size(); ++p) {
 			float oneOverW = 1./clippedPoly[p].position.w;
-			_ndcVertexes[p].position = clippedPoly[p].position*oneOverW;
+			_ndcVertexes[p].position = convertNormalizedDeviceCoordateToWindow(clippedPoly[p].position*oneOverW, _x, _y, _width, _height, _nearZ, _farZ);
 			_ndcVertexes[p].position.w = oneOverW;
 			_ndcVertexes[p].color = _shouldPerformPerspectiveCorrection ? clippedPoly[p].color*oneOverW : clippedPoly[p].color;
 			_ndcVertexes[p].texCoords = _shouldPerformPerspectiveCorrection ? clippedPoly[p].texCoords*oneOverW : clippedPoly[p].texCoords;
 		}
 
-		// transform from normalized device coordinates to window coordiates and render triangle strip after clipping
-		verts[0].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[0].position, _x, _y, _width, _height, _nearZ, _farZ);
-		verts[0].color = _ndcVertexes[0].color;
-		verts[0].texCoords = _ndcVertexes[0].texCoords;
+		if (_shouldPerformCulling && cullFace(_ndcVertexes[0].position, _ndcVertexes[1].position, _ndcVertexes[2].position)) {
+			continue;
+		}
 		for (int p = 1; p < clippedPoly.size()-1; ++p) {
-			verts[1].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p].position, _x, _y, _width, _height, _nearZ, _farZ);
-			verts[1].color = _ndcVertexes[p].color;
-			verts[1].texCoords = _ndcVertexes[p].texCoords;
-			verts[2].position = convertNormalizedDeviceCoordateToWindow(_ndcVertexes[p+1].position, _x, _y, _width, _height, _nearZ, _farZ);
-			verts[2].color = _ndcVertexes[p+1].color;
-			verts[2].texCoords = _ndcVertexes[p+1].texCoords;
-			rasterizeTriangle(verts);
+			rasterizeTriangle({_ndcVertexes[0], _ndcVertexes[p], _ndcVertexes[p+1]});
 		}
 	}
 }
