@@ -61,12 +61,25 @@ typedef CGImageRef (^RenderBlock)(const renderlib::Framebuffer& framebuffer);
 	}
 }
 
-- (IBAction)enablePerspectiveCorrection:(id)sender {
-	_renderer->enablePerspectiveCorrection();
+- (IBAction)togglePerspectiveCorrection:(id)sender {
+	if ([sender state] == NSOnState) {
+		_renderer->disablePerspectiveCorrection();
+		[sender setState:NSOffState];
+	} else {
+		_renderer->enablePerspectiveCorrection();
+		[sender setState:NSOnState];
+	}
 }
 
-- (IBAction)disablePerspectiveCorrection:(id)sender {
-	_renderer->diablePerspectiveCorrection();
+- (IBAction)toggleDepthTesting:(id)sender {
+	if ([sender state] == NSOnState) {
+		_renderer->disableDepthTesting();
+		[sender setState:NSOffState];
+	}
+	else {
+		_renderer->enableDepthTesting();
+		[sender setState:NSOnState];
+	}
 }
 
 - (IBAction)switchRenderMode:(id)sender {

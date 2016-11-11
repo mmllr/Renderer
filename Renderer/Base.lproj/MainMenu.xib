@@ -620,16 +620,16 @@
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="4om-Lj-Pri"/>
-                            <menuItem title="Enable perspective correction" id="cTb-pR-arC">
+                            <menuItem title="Perspective correction" state="on" id="cTb-pR-arC" userLabel="Perspective correction">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
-                                    <action selector="enablePerspectiveCorrection:" target="-1" id="4tG-3z-6Nt"/>
+                                    <action selector="togglePerspectiveCorrection:" target="-1" id="S82-ty-peP"/>
                                 </connections>
                             </menuItem>
-                            <menuItem title="Disable perspective correction" id="lEi-wZ-0iK">
+                            <menuItem title="Depth testing" state="on" id="lEi-wZ-0iK" userLabel="Depth testing">
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
-                                    <action selector="disablePerspectiveCorrection:" target="-1" id="9lL-bu-erJ"/>
+                                    <action selector="toggleDepthTesting:" target="-1" id="7Sx-sL-qPN"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="bgL-0k-HtY"/>

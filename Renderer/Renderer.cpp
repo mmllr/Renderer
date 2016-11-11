@@ -13,7 +13,7 @@ using namespace renderlib;
 using namespace glm;
 using namespace std;
 
-Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _clearColor({0, 0, 0, 255}), _shouldPerformPerspectiveCorrection(true) {
+Renderer::Renderer(unsigned int width, unsigned int height) : _x(0), _y(0), _width(width), _height(height), _nearZ(0), _farZ(1), _buffer(width, height), _depthBuffer(width*height), _clearColor({0, 0, 0, 255}), _shouldPerformPerspectiveCorrection(true), _shouldPerformDepthTest(true) {
 	
 }
 
@@ -31,6 +31,7 @@ void Renderer::setViewport(unsigned int x, unsigned int y, unsigned int width, u
 	_width = width;
 	_height = height;
 	_buffer.resize(width, height);
+	_depthBuffer.resize(width*height);
 }
 
 void Renderer::setDepthRange(float nearZ, float farZ) {
@@ -68,12 +69,13 @@ void Renderer::enablePerspectiveCorrection(void) {
 	_shouldPerformPerspectiveCorrection = true;
 }
 
-void Renderer::diablePerspectiveCorrection(void) {
+void Renderer::disablePerspectiveCorrection(void) {
 	_shouldPerformPerspectiveCorrection = false;
 }
 
 void Renderer::render(void) {
 	_buffer.fill(_clearColor);
+	std::fill_n(_depthBuffer.begin(), _depthBuffer.size(), 1);
 	if (_renderFunction) {
 		_renderFunction(*this);
 	}
@@ -154,23 +156,38 @@ void Renderer::drawSpan(const Vertex& left, const Vertex& right, float y) {
 	if (y < 0 || y >= _height) {
 		return;
 	}
-	int width = ceil(drawRight.position.x) - floor(drawLeft.position.x);
-	int startX = drawLeft.position.x + fract(y);
+	int startX = std::max(floor(drawLeft.position.x), 0.f);
+	int drawY = floor(y);
+	int width = ceil(drawRight.position.x) - startX;
 	for (int i = 0; i < width; ++i) {
+		int drawX = startX+i;
 		float a = ((float)i)/width;
 		if (_pixelShader != nullptr) {
 			Vertex fragment = clipVertex(drawLeft, drawRight, a);
+			if (_shouldPerformDepthTest && !performDepthTest(drawX, drawY, fragment.position.z)) {
+				continue;
+			}
 			if (_shouldPerformPerspectiveCorrection) {
 				// apply perspective correction (interpolation in screen space is done with texCoords/w and color/w
 				fragment.color /= fragment.position.w;
 				fragment.texCoords /= fragment.position.w;
 			}
 			vec4 color = _pixelShader(fragment);
-			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, startX+i, floor(y));
+			_buffer.setPixel({static_cast<uint8_t>(color.r*255), static_cast<uint8_t>(color.g*255), static_cast<uint8_t>(color.b*255), static_cast<uint8_t>(color.a*255)}, drawX, drawY);
 		}
 	}
 }
 
+bool Renderer::performDepthTest(int x, int y, float zPosition) {
+	assert(x < _width);
+	assert(y < _height);
+	
+	if (_depthBuffer[y*_width+x] >= zPosition) {
+		_depthBuffer[y*_width+x] = zPosition;
+		return true;
+	}
+	return false;
+}
 
 void Renderer::rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color) {
 	vec2 drawStart(start), drawEnd(end);

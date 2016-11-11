@@ -30,9 +30,12 @@ namespace renderlib {
 		void drawTriangles(uint32_t firstVertexIndex, uint32_t count);
 		void setTexture(const Texture& t);
 		void enablePerspectiveCorrection(void);
-		void diablePerspectiveCorrection(void);
+		void disablePerspectiveCorrection(void);
+		void enableDepthTesting(void) { _shouldPerformDepthTest = true; }
+		void disableDepthTesting(void) { _shouldPerformDepthTest = false; }
 		float aspectRatio(void) const { return ((float)_width)/_height; };
 	private:
+		bool performDepthTest(int x, int y, float zPosition);
 		vector<Vertex> transformAndClipTriangle(int startIndex);
 		void rasterizeLine(const glm::vec2& start, const glm::vec2 &end, const Pixel& color);
 		void rasterizeTriangle(const Vertex (&verts)[3]);
@@ -51,8 +54,10 @@ namespace renderlib {
 		vector<uint32_t> _indexBuffer;
 		vector<Vertex> _clipVertexes;
 		vector<Vertex> _ndcVertexes;
+		vector<float> _depthBuffer;
 		Texture _texture;
 		bool _shouldPerformPerspectiveCorrection;
+		bool _shouldPerformDepthTest;
 	};
 }
 
