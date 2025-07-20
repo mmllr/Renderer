@@ -26,3 +26,7 @@ xcuserdata/
 *.xcscmblueprint
 
 .idea
+.neoxcd
+.DS_Store
+buildServer.json
+Renderer.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
